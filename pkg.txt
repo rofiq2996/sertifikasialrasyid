@@ -1,0 +1,50 @@
+1:{
+2:  "name": "react-example",
+3:  "private": true,
+4:  "version": "0.0.0",
+5:  "type": "module",
+6:  "scripts": {
+7:    "dev": "vite --port=3000 --host=0.0.0.0",
+8:    "build": "vite build",
+9:    "preview": "vite preview",
+10:    "clean": "rm -rf dist server.js",
+11:    "lint": "tsc --noEmit"
+12:  },
+13:  "dependencies": {
+14:    "@google/genai": "^1.29.0",
+15:    "@tailwindcss/vite": "^4.1.14",
+16:    "@vitejs/plugin-react": "^5.0.4",
+17:    "chart.js": "^4.5.1",
+18:    "dotenv": "^17.2.3",
+19:    "exceljs": "^4.4.0",
+20:    "express": "^4.21.2",
+21:    "file-saver": "^2.0.5",
+22:    "firebase": "^12.13.0",
+23:    "html-to-image": "^1.11.13",
+24:    "html2canvas": "^1.4.1",
+25:    "jspdf": "^4.2.1",
+26:    "jspdf-autotable": "^5.0.8",
+27:    "jszip": "^3.10.1",
+28:    "lucide-react": "^0.546.0",
+29:    "motion": "^12.23.24",
+30:    "react": "^19.0.1",
+31:    "react-chartjs-2": "^5.3.1",
+32:    "react-dom": "^19.0.1",
+33:    "react-rnd": "^10.5.3",
+34:    "react-use": "^17.6.0",
+35:    "sweetalert2": "^11.26.24",
+36:    "vite": "^6.2.3",
+37:    "xlsx": "^0.18.5"
+38:  },
+39:  "devDependencies": {
+40:    "@types/express": "^4.17.21",
+41:    "@types/file-saver": "^2.0.7",
+42:    "@types/node": "^22.14.0",
+43:    "autoprefixer": "^10.4.21",
+44:    "esbuild": "^0.25.0",
+45:    "tailwindcss": "^4.1.14",
+46:    "tsx": "^4.21.0",
+47:    "typescript": "~5.8.2",
+48:    "vite": "^6.2.3"
+49:  }
+50:}

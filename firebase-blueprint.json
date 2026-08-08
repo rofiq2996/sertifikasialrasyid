@@ -1,0 +1,64 @@
+{
+  "entities": {
+    "penguji": {
+      "title": "Penguji",
+      "description": "Guru/Penguji data",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "nama": { "type": "string" },
+        "username": { "type": "string" },
+        "password": { "type": "string" },
+        "siswaBinaan": { "type": "number" },
+        "foto": { "type": "string" }
+      },
+      "required": ["id", "nama", "username", "siswaBinaan"]
+    },
+    "siswa": {
+      "title": "Siswa",
+      "description": "Siswa data",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "nis": { "type": "string" },
+        "password": { "type": "string" },
+        "nama": { "type": "string" },
+        "bin_binti": { "type": "string" },
+        "nama_ayah": { "type": "string" },
+        "kelas": { "type": "string" },
+        "target": { "type": "array", "items": { "type": "number" } },
+        "penguji_id": { "type": "string" }
+      },
+      "required": ["id", "nis", "nama", "bin_binti", "nama_ayah", "kelas", "target", "penguji_id"]
+    },
+    "setoran": {
+      "title": "Setoran",
+      "description": "Setoran hafalan",
+      "type": "object",
+      "properties": {
+        "id": { "type": "number" },
+        "tgl": { "type": "string" },
+        "siswa_id": { "type": "string" },
+        "juz": { "type": "number" },
+        "surah": { "type": "string" },
+        "ayat": { "type": "string" },
+        "nilai": { "type": "string" }
+      },
+      "required": ["id", "tgl", "siswa_id", "juz", "surah", "ayat", "nilai"]
+    }
+  },
+  "firestore": {
+    "/penguji/{pengujiId}": {
+      "schema": { "$ref": "penguji" },
+      "description": "Guru collection"
+    },
+    "/siswa/{siswaId}": {
+      "schema": { "$ref": "siswa" },
+      "description": "Siswa collection"
+    },
+    "/setoran/{setoranId}": {
+      "schema": { "$ref": "setoran" },
+      "description": "Setoran collection"
+    }
+  }
+}

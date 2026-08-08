@@ -1,0 +1,527 @@
+1:import React, { useState, useMemo } from 'react';
+2:import { useAppContext } from '../lib/AppContext';
+3:import { JUZ_SURAH_MAP } from '../lib/constants';
+4:import { Award, Download, Users, Loader2, ChevronLeft, ChevronRight, FileImage, FileText, Eye, X, Settings } from 'lucide-react';
+5:import { Siswa, Setoran } from '../types';
+6:import * as htmlToImage from 'html-to-image';
+7:import jsPDF from 'jspdf';
+8:import JSZip from 'jszip';
+9:import { saveAs } from 'file-saver';
+10:import { CustomTemplateEditor, CertElement } from '../components/CustomTemplateEditor';
+12:const DEFAULT_PORTRAIT_ELEMENTS: CertElement[] = [
+13:  { id: 'el-certNum', type: 'text', content: 'Nomor: {certNum}', x: 0, y: 260, width: 735, height: 30, fontFamily: "'Inter', sans-serif", fontSize: 16, color: '#475569', fontWeight: '400', textAlign: 'center' },
+14:  { id: 'el-nama', type: 'text', content: '{nama}', x: 0, y: 380, width: 735, height: 60, fontFamily: "'Pacifico', cursive", fontSize: 44, color: '#334155', fontWeight: '700', textAlign: 'center' },
+15:  { id: 'el-bin', type: 'text', content: '{bin_binti} {nama_ayah}', x: 0, y: 440, width: 735, height: 30, fontFamily: "'Inter', sans-serif", fontSize: 18, color: '#d97706', fontWeight: '700', textAlign: 'center' },
+16:  { id: 'el-juz', type: 'text', content: ': {tuntasJuz}', x: 305, y: 585, width: 400, height: 40, fontFamily: "'Inter', sans-serif", fontSize: 24, color: '#0f172a', fontWeight: '700', textAlign: 'left' },
+17:  { id: 'el-predikat', type: 'text', content: ': {predikat}', x: 305, y: 640, width: 400, height: 40, fontFamily: "'Inter', sans-serif", fontSize: 24, color: '#0f172a', fontWeight: '700', textAlign: 'left' },
+18:  { id: 'el-date', type: 'text', content: '{certPlace}, {certDate}', x: 0, y: 720, width: 735, height: 30, fontFamily: "'Inter', sans-serif", fontSize: 16, color: '#d97706', fontWeight: '700', textAlign: 'center' }
+19:];
+21:export const Sertifikat = () => {
+22:  const { siswa, setoran } = useAppContext();
+23:  const [isDownloading, setIsDownloading] = useState(false);
+24:  const [isPreviewing, setIsPreviewing] = useState<string | null>(null);
+25:  const [previewData, setPreviewData] = useState<{ id: string, name: string, dataUrl: string } | null>(null);
+26:  const [currentPage, setCurrentPage] = useState(1);
+27:  const [certNumFormat, setCertNumFormat] = useState('Nomor: 2688/S.144.***/IV/2026');
+28:  const [certStartNum, setCertStartNum] = useState(1);
+29:  const [certPlace, setCertPlace] = useState('Batam');
+30:  const [certDate, setCertDate] = useState('23 Mei 2026');
+31:  const [showSettings, setShowSettings] = useState(false);
+33:  // Editor states
+34:  const [showEditor, setShowEditor] = useState(false);
+35:  const [customElements, setCustomElements] = useState<CertElement[]>(() => {
+36:    const saved = localStorage.getItem('customCertElements');
+37:    let parsed = saved ? JSON.parse(saved) : null;
+38:    if (!parsed || parsed.length === 0) parsed = DEFAULT_PORTRAIT_ELEMENTS;
+39:    return parsed;
+40:  });
+41:  const [customBgUrl, setCustomBgUrl] = useState<string | null>(() => localStorage.getItem('customCertBg') || null);
+42:  const [customIsPortrait, setCustomIsPortrait] = useState<boolean>(() => {
+43:    const saved = localStorage.getItem('customCertPortrait');
+44:    return saved ? JSON.parse(saved) : true;
+45:  });
+46:  const [customPrintBg, setCustomPrintBg] = useState<boolean>(() => {
+47:    const saved = localStorage.getItem('customCertPrintBg');
+48:    return saved ? JSON.parse(saved) : true;
+49:  });
+51:  const itemsPerPage = 5;
+53:  const getTuntasJuz = (s: Siswa, allSetoran: Setoran[]) => {
+54:    if (!s.target || s.target.length === 0) return [];
+56:    if (s.nama.toLowerCase() === 'abdullah azzam') {
+57:      return [...s.target]; 
+58:    }
+60:    const tuntas: number[] = [];
+61:    for (const juz of s.target) {
+62:      const requiredSurahs = JUZ_SURAH_MAP[juz] || [];
+63:      let isJuzTuntas = true;
+64:      for (const surah of requiredSurahs) {
+65:        const hasSetoran = allSetoran.some(st => st.siswa_id === s.id && st.juz === juz && st.surah === surah);
+66:        if (!hasSetoran) {
+67:          isJuzTuntas = false;
+68:          break;
+69:        }
+70:      }
+71:      if (isJuzTuntas) tuntas.push(juz);
+72:    }
+73:    return tuntas;
+74:  };
+76:  const studentsWithStatus = useMemo(() => {
+77:    return siswa.map(s => ({
+78:      ...s,
+79:      tuntasJuz: getTuntasJuz(s, setoran)
+80:    }));
+81:  }, [siswa, setoran]);
+83:  const eligibleStudents = useMemo(() => {
+84:    return studentsWithStatus.filter(s => s.tuntasJuz.length > 0);
+85:  }, [studentsWithStatus]);
+87:  const totalPages = Math.ceil(studentsWithStatus.length / itemsPerPage);
+88:  const paginatedStudents = studentsWithStatus.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
+90:  const handlePreview = async (studentId: string, studentName: string) => {
+91:    setIsPreviewing(studentId);
+92:    try {
+93:      const el = document.getElementById(`cert-${studentId}`);
+94:      if (el) {
+95:        await htmlToImage.toJpeg(el, { quality: 0.1, pixelRatio: 0.5 }); // Warm-up for fonts/images
+96:        const dataUrl = await htmlToImage.toJpeg(el, { quality: 0.95, pixelRatio: 1.5, cacheBust: true });
+97:        setPreviewData({ id: studentId, name: studentName, dataUrl });
+98:      }
+99:    } catch (error) {
+100:      console.error('Failed to generate preview', error);
+101:    }
+102:    setIsPreviewing(null);
+103:  };
+105:  const isPortrait = customIsPortrait;
+107:  const handleDownload = async (studentId: string, studentName: string, format: 'pdf' | 'jpg') => {
+108:    setIsDownloading(true);
+109:    try {
+110:      const el = document.getElementById(`cert-${studentId}`);
+111:      if (el) {
+112:        const scale = 2; // pixelRatio
+113:        
+114:        await htmlToImage.toPng(el, { pixelRatio: 0.5 }); // Warm-up for fonts/images
+116:        if (format === 'pdf') {
+117:          const imgData = await htmlToImage.toPng(el, { pixelRatio: scale, cacheBust: true });
+118:          const pdf = new jsPDF(isPortrait ? 'portrait' : 'landscape', 'mm', 'a4');
+119:          if (isPortrait) {
+120:            pdf.addImage(imgData, 'PNG', 0, 0, 210, 297);
+121:          } else {
+122:            pdf.addImage(imgData, 'PNG', 0, 0, 297, 210);
+123:          }
+124:          pdf.save(`Sertifikat_${studentName.replace(/\s+/g, '_')}.pdf`);
+125:        } else {
+126:          const dataUrl = await htmlToImage.toJpeg(el, { quality: 0.95, pixelRatio: scale, cacheBust: true });
+127:          const link = document.createElement('a');
+128:          link.download = `Sertifikat_${studentName.replace(/\s+/g, '_')}.jpg`;
+129:          link.href = dataUrl;
+130:          link.click();
+131:        }
+132:      }
+133:    } catch (error) {
+134:      console.error(`Failed to generate ${format.toUpperCase()}`, error);
+135:    }
+136:    setIsDownloading(false);
+137:  };
+139:  const handleDownloadAll = async (format: 'pdf' | 'jpg') => {
+140:    if (eligibleStudents.length === 0) return;
+141:    setIsDownloading(true);
+142:    try {
+143:      if (format === 'pdf') {
+144:        const pdf = new jsPDF(isPortrait ? 'portrait' : 'landscape', 'mm', 'a4');
+145:        
+146:        // Warm up on first element
+147:        const firstEl = document.getElementById(`cert-${eligibleStudents[0]?.id}`);
+148:        if (firstEl) await htmlToImage.toPng(firstEl, { pixelRatio: 0.5 });
+150:        for (let i = 0; i < eligibleStudents.length; i++) {
+151:          const s = eligibleStudents[i];
+152:          const el = document.getElementById(`cert-${s.id}`);
+153:          if (el) {
+154:            const imgData = await htmlToImage.toPng(el, { pixelRatio: 2, cacheBust: true });
+155:            
+156:            if (i > 0) pdf.addPage();
+157:            if (isPortrait) {
+158:              pdf.addImage(imgData, 'PNG', 0, 0, 210, 297);
+159:            } else {
+160:              pdf.addImage(imgData, 'PNG', 0, 0, 297, 210);
+161:            }
+162:          }
+163:        }
+164:        pdf.save(`Sertifikat_Kolektif_Semua.pdf`);
+165:      } else {
+166:        const zip = new JSZip();
+167:        for (let i = 0; i < eligibleStudents.length; i++) {
+168:          const s = eligibleStudents[i];
+169:          const el = document.getElementById(`cert-${s.id}`);
+170:          if (el) {
+171:            const dataUrl = await htmlToImage.toJpeg(el, { quality: 0.95, pixelRatio: 2, cacheBust: true });
+172:            const base64Data = dataUrl.split(',')[1];
+173:            zip.file(`Sertifikat_${s.nama.replace(/\s+/g, '_')}.jpg`, base64Data, { base64: true });
+174:          }
+175:        }
+176:        const content = await zip.generateAsync({ type: 'blob' });
+177:        saveAs(content, `Sertifikat_Kolektif_Semua.zip`);
+178:      }
+179:    } catch (error) {
+180:      console.error(`Failed to generate ${format.toUpperCase()}`, error);
+181:    }
+182:    setIsDownloading(false);
+183:  };
+185:  return (
+186:    <div className="space-y-6 relative overflow-hidden">
+187:      <div>
+188:        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
+189:          <div>
+190:            <h2 className="text-xl md:text-2xl font-bold bg-gradient-to-r from-emerald-600 to-teal-400 bg-clip-text text-transparent">Cetak Sertifikat <span className="text-gray-500 text-sm">(Download PDF/JPG)</span></h2>
+191:            <p className="text-gray-500 text-sm mt-1">Daftar siswa yang telah tuntas hafalan sesuai target Juz.</p>
+192:          </div>
+193:          <div className="flex space-x-3">
+194:            <button 
+195:              onClick={() => setShowSettings(!showSettings)}
+196:              className="flex items-center space-x-2 bg-gray-100 hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 py-2 px-4 rounded-xl font-bold transition-all shadow-sm"
+197:              title="Pengaturan Penomoran"
+198:            >
+199:              <Settings className="w-5 h-5" />
+200:            </button>
+201:            <div className="relative group">
+202:              <button 
+203:                disabled={studentsWithStatus.filter(s => s.tuntasJuz.length > 0).length === 0 || isDownloading}
+204:                className="flex items-center space-x-2 bg-emerald-500 hover:bg-emerald-600 dark:bg-emerald-600 dark:hover:bg-emerald-700 text-white py-2 px-4 rounded-xl font-bold transition-all shadow-md disabled:opacity-50 disabled:cursor-not-allowed"
+205:              >
+206:                {isDownloading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Download className="w-5 h-5" />} 
+207:                <span>Kolektif</span>
+208:              </button>
+209:              
+210:              <div className="absolute right-0 mt-2 w-48 bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-100 dark:border-gray-700 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-10">
+211:                <button 
+212:                  onClick={() => handleDownloadAll('pdf')}
+213:                  disabled={isDownloading}
+214:                  className="w-full flex items-center px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-700 text-left text-sm font-semibold text-gray-700 dark:text-gray-300 rounded-t-xl"
+215:                >
+216:                  <FileText className="w-4 h-4 mr-2" /> PDF (1 File)
+217:                </button>
+218:                <button 
+219:                  onClick={() => handleDownloadAll('jpg')}
+220:                  disabled={isDownloading}
+221:                  className="w-full flex items-center px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-700 text-left text-sm font-semibold text-gray-700 dark:text-gray-300 rounded-b-xl border-t border-gray-100 dark:border-gray-700"
+222:                >
+223:                  <FileImage className="w-4 h-4 mr-2" /> JPG (ZIP File)
+224:                </button>
+225:              </div>
+226:            </div>
+227:          </div>
+228:        </div>
+230:        {showSettings && (
+231:          <div className="bg-white dark:bg-gray-800 p-5 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 mb-6 relative z-0">
+232:            <h3 className="font-bold text-gray-800 dark:text-white mb-4">Pengaturan Sertifikat</h3>
+233:            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+234:              <div>
+235:                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Versi Template Sertifikat</label>
+236:                <div className="mt-2">
+237:                  <button 
+238:                    onClick={() => setShowEditor(true)}
+239:                    className="w-full flex items-center justify-center space-x-2 bg-indigo-500 hover:bg-indigo-600 text-white py-2 px-4 rounded-xl font-bold transition-all shadow-sm"
+240:                  >
+241:                    Buka Editor Template
+242:                  </button>
+243:                </div>
+244:              </div>
+245:              <div>
+246:                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Format Nomor (*** unt urut)</label>
+247:                <input 
+248:                  type="text" 
+249:                  value={certNumFormat}
+250:                  onChange={(e) => setCertNumFormat(e.target.value)}
+251:                  className="w-full px-4 py-2 rounded-xl border border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-800 dark:text-gray-100 focus:ring-2 focus:ring-emerald-500 outline-none"
+252:                  placeholder="Nomor: 2688/S.144.***/IV/2026"
+253:                />
+254:              </div>
+255:              <div>
+256:                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Mulai dari Angka</label>
+257:                <input 
+258:                  type="number" 
+259:                  min="1"
+260:                  value={certStartNum}
+261:                  onChange={(e) => setCertStartNum(parseInt(e.target.value) || 1)}
+262:                  className="w-full px-4 py-2 rounded-xl border border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-800 dark:text-gray-100 focus:ring-2 focus:ring-emerald-500 outline-none"
+263:                />
+264:              </div>
+265:              <div>
+266:                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Tempat Dikeluarkan</label>
+267:                <input 
+268:                  type="text" 
+269:                  value={certPlace}
+270:                  onChange={(e) => setCertPlace(e.target.value)}
+271:                  className="w-full px-4 py-2 rounded-xl border border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-800 dark:text-gray-100 focus:ring-2 focus:ring-emerald-500 outline-none"
+272:                  placeholder="Batam"
+273:                />
+274:              </div>
+275:              <div>
+276:                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Tanggal Dikeluarkan</label>
+277:                <input 
+278:                  type="text" 
+279:                  value={certDate}
+280:                  onChange={(e) => setCertDate(e.target.value)}
+281:                  className="w-full px-4 py-2 rounded-xl border border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-800 dark:text-gray-100 focus:ring-2 focus:ring-emerald-500 outline-none"
+282:                  placeholder="23 Mei 2026"
+283:                />
+284:              </div>
+285:            </div>
+286:          </div>
+287:        )}
+289:        <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden relative z-0">
+290:          <div className="overflow-x-auto pb-2 custom-scrollbar">
+291:            {studentsWithStatus.length === 0 ? (
+292:              <div className="text-center py-12 text-gray-400 dark:text-gray-500">
+293:                <Award className="w-16 h-16 mx-auto mb-4 opacity-50" />
+294:                <p>Belum ada data siswa.</p>
+295:              </div>
+296:            ) : (
+297:              <table className="w-full text-left text-xs md:text-sm text-gray-600 dark:text-gray-300 min-w-[600px]">
+298:                <thead className="bg-gray-50 dark:bg-gray-700/50 text-gray-500 dark:text-gray-400 font-semibold border-b border-gray-100 dark:border-gray-700">
+299:                  <tr>
+300:                    <th className="px-4 py-3 md:py-4">Nama Siswa</th>
+301:                    <th className="px-4 py-3 md:py-4">Target Juz</th>
+302:                    <th className="px-4 py-3 md:py-4">Predikat</th>
+303:                    <th className="px-4 py-3 md:py-4 text-center">Aksi</th>
+304:                  </tr>
+305:                </thead>
+306:                <tbody className="divide-y divide-gray-50 dark:divide-gray-700/50">
+307:                  {paginatedStudents.map((s) => (
+308:                    <tr key={s.id} className="hover:bg-gray-50/50 dark:hover:bg-gray-700/20 transition-colors">
+309:                      <td className="px-4 py-3">
+310:                        <p className="font-bold text-gray-800 dark:text-white mb-0.5">{s.nama}</p>
+311:                        <p className="text-xs text-gray-500 dark:text-gray-400">NIS: {s.nis}</p>
+312:                      </td>
+313:                      <td className="px-4 py-3">
+314:                        {s.tuntasJuz.length > 0 ? (
+315:                          <span className="inline-flex items-center space-x-1 px-2.5 py-1 bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-400 rounded-lg text-xs font-semibold uppercase tracking-wider">
+316:                            <span>Juz {s.tuntasJuz.join(', ')}</span>
+317:                          </span>
+318:                        ) : (
+319:                          <span className="inline-flex items-center space-x-1 px-2.5 py-1 bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 rounded-lg text-xs font-semibold tracking-wider">
+320:                            <span>Belum Tuntas</span>
+321:                          </span>
+322:                        )}
+323:                      </td>
+324:                      <td className="px-4 py-3 font-semibold text-gray-700 dark:text-gray-300">
+325:                        {s.tuntasJuz.length > 0 ? 'Mumtaz' : '-'}
+326:                      </td>
+327:                      <td className="px-4 py-3">
+328:                        <div className="flex justify-center space-x-2">
+329:                          <button 
+330:                            onClick={() => handlePreview(s.id, s.nama)}
+331:                            disabled={isPreviewing === s.id || isDownloading || s.tuntasJuz.length === 0}
+332:                            title="Preview"
+333:                            className="p-2 bg-amber-50 hover:bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:hover:bg-amber-900/50 dark:text-amber-300 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+334:                          >
+335:                            {isPreviewing === s.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <Eye className="w-4 h-4" />}
+336:                          </button>
+337:                          <button 
+338:                            onClick={() => handleDownload(s.id, s.nama, 'pdf')}
+339:                            disabled={isDownloading || s.tuntasJuz.length === 0}
+340:                            title="Download PDF"
+341:                            className="p-2 bg-red-50 hover:bg-red-100 text-red-700 dark:bg-red-900/30 dark:hover:bg-red-900/50 dark:text-red-300 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+342:                          >
+343:                            <FileText className="w-4 h-4" />
+344:                          </button>
+345:                          <button 
+346:                            onClick={() => handleDownload(s.id, s.nama, 'jpg')}
+347:                            disabled={isDownloading || s.tuntasJuz.length === 0}
+348:                            title="Download JPG"
+349:                            className="p-2 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:hover:bg-emerald-900/50 dark:text-emerald-300 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+350:                          >
+351:                            <FileImage className="w-4 h-4" />
+352:                          </button>
+353:                        </div>
+354:                      </td>
+355:                    </tr>
+356:                  ))}
+357:                </tbody>
+358:              </table>
+359:            )}
+360:          </div>
+361:          
+362:          {/* Pagination Controls */}
+363:          {studentsWithStatus.length > 0 && (
+364:            <div className="flex items-center justify-between px-4 py-3 border-t border-gray-100 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-800/50">
+365:              <span className="text-xs text-gray-500">
+366:                Menampilkan {(currentPage - 1) * itemsPerPage + 1} - {Math.min(currentPage * itemsPerPage, studentsWithStatus.length)} dari {studentsWithStatus.length} data
+367:              </span>
+368:              <div className="flex space-x-2">
+369:                <button 
+370:                  onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+371:                  disabled={currentPage === 1}
+372:                  className="flex items-center px-3 py-1.5 rounded-md text-xs font-semibold bg-white dark:bg-gray-700 text-gray-600 dark:text-gray-300 border border-gray-200 dark:border-gray-600 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors"
+373:                >
+374:                  <ChevronLeft className="w-4 h-4 mr-1" /> Previous
+375:                </button>
+376:                <button 
+377:                  onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+378:                  disabled={currentPage >= totalPages}
+379:                  className="flex items-center px-3 py-1.5 rounded-md text-xs font-semibold bg-white dark:bg-gray-700 text-gray-600 dark:text-gray-300 border border-gray-200 dark:border-gray-600 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors"
+380:                >
+381:                  Next <ChevronRight className="w-4 h-4 ml-1" />
+382:                </button>
+383:              </div>
+384:            </div>
+385:          )}
+386:        </div>
+387:      </div>
+389:      {/* Preview Modal */}
+390:      {previewData && (
+391:        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-900/80 backdrop-blur-sm" onClick={() => setPreviewData(null)}>
+392:          <div className="relative w-full max-w-5xl bg-white dark:bg-gray-800 rounded-2xl overflow-hidden shadow-2xl flex flex-col" onClick={e => e.stopPropagation()}>
+393:            <div className="flex items-center justify-between p-4 border-b border-gray-100 dark:border-gray-700">
+394:              <h3 className="font-bold text-gray-800 dark:text-white">Preview Sertifikat - {previewData.name}</h3>
+395:              <button 
+396:                onClick={() => setPreviewData(null)}
+397:                className="p-1.5 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-500 transition-colors"
+398:                title="Tutup Preview"
+399:              >
+400:                <X className="w-5 h-5" />
+401:              </button>
+402:            </div>
+403:            
+404:            <div className="p-4 sm:p-6 bg-gray-50 dark:bg-gray-900 flex-1 flex items-center justify-center">
+405:              <img 
+406:                src={previewData.dataUrl} 
+407:                alt={`Preview Sertifikat ${previewData.name}`} 
+408:                className="max-w-full max-h-[65vh] object-contain rounded-md shadow-md border border-gray-200 dark:border-gray-700" 
+409:              />
+410:            </div>
+411:            <div className="p-4 border-t border-gray-100 dark:border-gray-700 flex justify-end gap-3 bg-white dark:bg-gray-800">
+412:              <button
+413:                onClick={() => setPreviewData(null)}
+414:                className="px-4 py-2 font-semibold text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-xl transition-colors"
+415:              >
+416:                Tutup
+417:              </button>
+418:              <button
+419:                onClick={() => {
+420:                  handleDownload(previewData.id, previewData.name, 'pdf');
+421:                  setPreviewData(null);
+422:                }}
+423:                className="px-4 py-2 font-bold text-white bg-red-500 hover:bg-red-600 rounded-xl shadow-sm transition-colors flex items-center gap-2"
+424:              >
+425:                <FileText className="w-4 h-4" /> Download PDF
+426:              </button>
+427:              <button
+428:                onClick={() => {
+429:                  handleDownload(previewData.id, previewData.name, 'jpg');
+430:                  setPreviewData(null);
+431:                }}
+432:                className="px-4 py-2 font-bold text-white bg-emerald-500 hover:bg-emerald-600 rounded-xl shadow-sm transition-colors flex items-center gap-2"
+433:              >
+434:                <FileImage className="w-4 h-4" /> Download JPG
+435:              </button>
+436:            </div>
+437:          </div>
+438:        </div>
+439:      )}
+441:      {/* Hidden Templates for HTML to Image / PDF Generation */}
+442:            <div 
+443:        style={{ position: 'fixed', left: '-15000px', top: 0 }}
+444:      >
+445:         {eligibleStudents.map((s, index) => (
+446:            <div 
+447:              key={`template-${s.id}`} 
+448:              id={`cert-${s.id}`}
+449:              className="relative flex flex-col justify-center items-center text-center overflow-hidden box-border bg-white"
+450:              style={{
+451:                width: isPortrait ? '793px' : '1122px',
+452:                height: isPortrait ? '1122px' : '793px',
+453:                border: 'none',
+454:              }}
+455:            >
+456:                <div 
+457:                  className="w-full h-full relative z-10"
+458:                  style={{
+459:                    backgroundImage: customBgUrl && customPrintBg ? `url(${customBgUrl})` : 'none',
+460:                    backgroundSize: '100% 100%',
+461:                    backgroundPosition: 'center',
+462:                    backgroundRepeat: 'no-repeat'
+463:                  }}
+464:                >
+465:                  {customElements.map(el => {
+466:                    let text = el.content;
+467:                    
+468:                    const replacements = {
+469:                      '{nama}': s.nama,
+470:                      '{bin_binti}': s.bin_binti,
+471:                      '{nama_ayah}': s.nama_ayah,
+472:                      '{tuntasJuz}': s.tuntasJuz.length > 0 ? s.tuntasJuz.join(', ') : '-',
+473:                      '{predikat}': 'Mumtaz',
+474:                      '{certNum}': certNumFormat.replace('***', String(certStartNum + index).padStart(3, '0')),
+475:                      '{certPlace}': certPlace,
+476:                      '{certDate}': certDate
+477:                    };
+479:                    if (el.type === 'variable') {
+480:                      switch (el.content) {
+481:                        case 'nama': text = s.nama; break;
+482:                        case 'bin_binti': text = s.bin_binti; break;
+483:                        case 'nama_ayah': text = s.nama_ayah; break;
+484:                        case 'tuntasJuz': text = s.tuntasJuz.length > 0 ? s.tuntasJuz.join(', ') : '-'; break;
+485:                        case 'predikat': text = 'Mumtaz'; break;
+486:                        case 'certNum': text = replacements['{certNum}']; break;
+487:                        case 'certPlace': text = certPlace; break;
+488:                        case 'certDate': text = certDate; break;
+489:                        default: text = ''; // Should not happen
+490:                      }
+491:                    } else if (el.type === 'text') {
+492:                      Object.entries(replacements).forEach(([key, val]) => {
+493:                        text = text.split(key).join(val);
+494:                      });
+495:                    }
+497:                    const editorScale = 3.5;
+498:                    const pxWidthMultiplier = isPortrait ? (793.7 / (210 * editorScale)) : (1122.5 / (297 * editorScale));
+499:                    const px = (val) => `${val * pxWidthMultiplier}px`;
+500:                    
+501:                    return (
+502:                      <div 
+503:                        key={el.id}
+504:                        className="absolute flex"
+505:                        style={{
+506:                          left: px(el.x),
+507:                          top: px(el.y),
+508:                          width: px(el.width),
+509:                          height: px(el.height),
+510:                          fontFamily: el.fontFamily,
+511:                          fontSize: px(el.fontSize),
+512:                          color: el.color,
+513:                          fontWeight: el.fontWeight,
+514:                          textAlign: el.textAlign,
+515:                          alignItems: 'center',
+516:                          justifyContent: el.textAlign === 'center' ? 'center' : el.textAlign === 'right' ? 'flex-end' : 'flex-start',
+517:                          wordWrap: 'break-word'
+518:                        }}
+519:                        dangerouslySetInnerHTML={{ __html: text }}
+520:                      />
+521:                    );
+522:                  })}
+523:                </div>
+524:            </div>
+525:         ))}
+526:      </div>
+527:      
+528:      {showEditor && (
+529:        <CustomTemplateEditor
+530:          onClose={() => setShowEditor(false)}
+531:          initialElements={customElements}
+532:          initialBgUrl={customBgUrl}
+533:          initialIsPortrait={customIsPortrait}
+534:          onSave={(elements, bgUrl, isPortraitLayout, printBg) => {
+535:            setCustomElements(elements);
+536:            setCustomBgUrl(bgUrl);
+537:            setCustomIsPortrait(isPortraitLayout);
+538:            setCustomPrintBg(printBg);
+539:            localStorage.setItem('customCertElements', JSON.stringify(elements));
+540:            if (bgUrl) localStorage.setItem('customCertBg', bgUrl); 
+541:            else localStorage.removeItem('customCertBg');
+542:            localStorage.setItem('customCertPortrait', JSON.stringify(isPortraitLayout));
+543:            localStorage.setItem('customCertPrintBg', JSON.stringify(printBg));
+544:            setShowEditor(false);
+545:          }}
+546:        />
+547:      )}
+548:    </div>
+549:  );
+550:};

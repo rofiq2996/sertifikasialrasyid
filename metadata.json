@@ -1,0 +1,6 @@
+{
+  "name": "Sertifikasi Al-Qur'an",
+  "description": "Aplikasi Sertifikasi hafalan Al-Qur'an SD al-Rasyid untuk admin, guru, dan siswa.",
+  "requestFramePermissions": ["camera"],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
