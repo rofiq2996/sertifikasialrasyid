@@ -102,14 +102,28 @@ export const MainLayout = () => {
             text: 'Apakah Anda yakin ingin keluar dari aplikasi?',
             icon: 'warning',
             showCancelButton: true,
-            confirmButtonColor: '#d33',
-            cancelButtonColor: '#3085d6',
-            confirmButtonText: 'Ya, keluar',
+            confirmButtonColor: '#ef4444',
+            cancelButtonColor: '#94a3b8',
+            confirmButtonText: 'Ya, Keluar',
             cancelButtonText: 'Batal',
-            reverseButtons: true
+            reverseButtons: true,
+            customClass: {
+              popup: 'rounded-3xl',
+              confirmButton: 'rounded-xl font-bold tracking-wide uppercase',
+              cancelButton: 'rounded-xl font-bold tracking-wide uppercase',
+            }
           }).then((result) => {
             if (result.isConfirmed) {
-              window.history.go(-2);
+              if ((navigator as any).app && (navigator as any).app.exitApp) {
+                (navigator as any).app.exitApp();
+              } else if ((navigator as any).device && (navigator as any).device.exitApp) {
+                (navigator as any).device.exitApp();
+              } else if ((window as any).ReactNativeWebView) {
+                (window as any).ReactNativeWebView.postMessage('exit');
+              } else {
+                window.close();
+                window.history.go(-2);
+              }
             }
           });
         }

@@ -34,9 +34,17 @@ export const GuruAktivitas = () => {
         if (s.ayat && s.ayat.toLowerCase().includes('lengkap')) {
           poin = SURAH_AYAT_COUNT[s.surah] || 1;
         } else if (s.ayat) {
-          const match = s.ayat.match(/(\d+)/);
+          const match = s.ayat.match(/(?:Ayat\s+)?(\d+)(?:-(\d+))?/i);
           if (match) {
-            poin = parseInt(match[1], 10);
+            const start = parseInt(match[1], 10);
+            const end = match[2] ? parseInt(match[2], 10) : start;
+            poin = Math.max(1, end - start + 1);
+          } else {
+            // Fallback for cases like 'Ayat 5' or something without 'Ayat'
+            const singleMatch = s.ayat.match(/(\d+)/);
+            if (singleMatch) {
+              poin = 1; // Default to 1 verse if we only find a single number but no range format
+            }
           }
         }
       }
@@ -92,7 +100,9 @@ export const GuruAktivitas = () => {
                 <div className="relative z-10">
                   <h3 className="font-bold text-slate-800 dark:text-white text-lg mb-4">{item.student.nama}</h3>
                   <div className="flex justify-between items-end border-t border-slate-200 dark:border-slate-600 pt-3">
-                    <p className="text-xs font-semibold text-slate-500 dark:text-slate-400">Total Skor</p>
+                    <p className="text-xs font-semibold text-slate-500 dark:text-slate-400">
+                      {item.juz <= 28 ? 'Total Ayat Disetor' : 'Total Surat Disetor'}
+                    </p>
                     <div className="text-right">
                       <p className="text-xl font-black text-[#d19e44] dark:text-[#d19e44] leading-none">{item.student.totalSkor}</p>
                       <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mt-1">{item.juz <= 28 ? 'Ayat' : 'Surah'}</p>

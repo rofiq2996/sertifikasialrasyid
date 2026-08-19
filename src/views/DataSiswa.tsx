@@ -99,7 +99,9 @@ export const DataSiswa = () => {
   };
 
   const handleExportUserPDF = () => {
-    exportUserToPDF(siswa, penguji);
+    // If Admin, export all siswa. If Guru, export only their binaan (filteredSiswa without search text)
+    const siswaToExport = isAdmin ? siswa : filteredSiswa.length > 0 ? filteredSiswa : siswa.filter(s => s.penguji_id === user?.id);
+    exportUserToPDF(siswaToExport, penguji);
   };
 
   const generateUsername = (nama: string, existingUsernames: Set<string>) => {
@@ -208,11 +210,13 @@ export const DataSiswa = () => {
         </div>
         
         <div className="grid grid-cols-2 md:flex gap-2 w-full md:w-auto flex-wrap">
+          {(isAdmin || user?.role === 'guru') && (
+            <button onClick={handleExportUserPDF} className="flex items-center justify-center space-x-2 bg-red-50 text-red-700 hover:bg-red-100 active:scale-[0.98] dark:bg-red-900/30 dark:text-red-400 py-3 md:py-2 md:px-4 rounded-xl text-sm font-semibold transition-all border border-red-100 dark:border-red-800/50 tap-bounce" title="Download Data User PDF">
+              <DownloadCloud className="w-4 h-4" /> <span>User</span>
+            </button>
+          )}
           {isAdmin && (
             <>
-              <button onClick={handleExportUserPDF} className="flex items-center justify-center space-x-2 bg-red-50 text-red-700 hover:bg-red-100 active:scale-[0.98] dark:bg-red-900/30 dark:text-red-400 py-3 md:py-2 md:px-4 rounded-xl text-sm font-semibold transition-all border border-red-100 dark:border-red-800/50 tap-bounce" title="Download Data User PDF">
-                <DownloadCloud className="w-4 h-4" /> <span>User</span>
-              </button>
               <button onClick={downloadTemplate} className="flex items-center justify-center space-x-2 bg-blue-50 text-blue-700 hover:bg-blue-100 active:scale-[0.98] dark:bg-blue-900/30 dark:text-blue-400 py-3 md:py-2 md:px-4 rounded-xl text-sm font-semibold transition-all border border-blue-100 dark:border-blue-800/50 tap-bounce" title="Download Template Excel">
                 <DownloadCloud className="w-4 h-4" /> <span>Template</span>
               </button>

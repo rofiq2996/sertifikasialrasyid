@@ -18,6 +18,7 @@ interface AppContextType {
   refreshData: () => Promise<void>;
   addSetoran: (setoranInfo: any) => Promise<void>;
   updateSetoran: (setoranInfo: any) => Promise<void>;
+  deleteSetoran: (id: string | number) => Promise<void>;
   clearSetoranSiswa: (siswaIds: string[]) => Promise<void>;
   clearAllSetoran: () => Promise<void>;
   addSiswa: (siswa: Siswa) => Promise<void>;
@@ -104,6 +105,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setSetoran([...store.setoran]);
   };
 
+  const deleteSetoran = async (id: string | number) => {
+    await store.deleteSetoran(id);
+    setSetoran([...store.setoran]);
+  };
+
   const clearSetoranSiswa = async (siswaIds: string[]) => {
     await store.clearSetoranSiswa(siswaIds);
     setSetoran([...store.setoran]);
@@ -174,7 +180,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   return (
-    <AppContext.Provider value={{ user, setUser, penguji, siswa, setoran, kelas, theme, toggleTheme, language, setLanguage, settings, updateSettings, refreshData, addSetoran, updateSetoran, clearSetoranSiswa, clearAllSetoran, addSiswa, updateSiswa, deleteSiswa, addPenguji, updatePenguji, deletePenguji, addKelas, updateKelas, deleteKelas, clearAllData }}>
+    <AppContext.Provider value={{ user, setUser, penguji, siswa, setoran, kelas, theme, toggleTheme, language, setLanguage, settings, updateSettings, refreshData, addSetoran, updateSetoran, deleteSetoran, clearSetoranSiswa, clearAllSetoran, addSiswa, updateSiswa, deleteSiswa, addPenguji, updatePenguji, deletePenguji, addKelas, updateKelas, deleteKelas, clearAllData }}>
       {children}
     </AppContext.Provider>
   );

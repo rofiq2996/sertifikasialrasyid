@@ -7,7 +7,7 @@ import { EditProfileModal } from '../components/EditProfileModal';
 import { CustomSelect } from '../components/CustomSelect';
 
 export const GuruDashboard = ({ setActiveMenu }: { setActiveMenu?: (menu: string) => void }) => {
-  const { user, penguji, siswa, setoran, addSetoran, updateSetoran, updatePenguji, theme } = useAppContext();
+  const { user, penguji, siswa, setoran, addSetoran, updateSetoran, deleteSetoran, updatePenguji, theme } = useAppContext();
   const siswaBinaan = siswa.filter(s => s.penguji_id === user?.id);
   const currentPenguji = penguji.find(p => p.id === user?.id);
   
@@ -119,7 +119,7 @@ export const GuruDashboard = ({ setActiveMenu }: { setActiveMenu?: (menu: string
       <div class="border-t border-slate-100 mb-6 w-full"></div>
     ` : '';
 
-    const { value: formValues } = await Swal.fire({
+    const result = await Swal.fire({
       html: `
         <h2 class="text-xl sm:text-2xl font-bold text-slate-800 text-center mb-6 mt-2">Input Setoran</h2>
         
@@ -172,14 +172,17 @@ export const GuruDashboard = ({ setActiveMenu }: { setActiveMenu?: (menu: string
         </div>
       `,
       showCancelButton: true,
+      showDenyButton: surahHistory.length > 0,
       confirmButtonText: 'Simpan',
       cancelButtonText: 'Batal',
+      denyButtonText: 'Hapus',
       buttonsStyling: false,
       customClass: {
         popup: 'rounded-3xl p-5 sm:p-8 !pb-7 w-full max-w-md',
-        confirmButton: 'bg-[#d19e44] hover:bg-[#d19e44] text-white font-bold py-3 px-8 rounded-xl mx-2 shadow-sm transition-colors text-base flex-1 sm:flex-none uppercase tracking-wide',
-        cancelButton: 'bg-slate-500 hover:bg-slate-600 text-white font-bold py-3 px-8 rounded-xl mx-2 shadow-sm transition-colors text-base flex-1 sm:flex-none uppercase tracking-wide',
-        actions: 'mt-8 border-t border-slate-100 pt-6 w-full flex justify-center gap-2',
+        confirmButton: 'bg-[#d19e44] hover:bg-[#d19e44] text-white font-bold py-3 px-6 rounded-xl mx-1 shadow-sm transition-colors text-sm flex-1 uppercase tracking-wide',
+        cancelButton: 'bg-slate-500 hover:bg-slate-600 text-white font-bold py-3 px-6 rounded-xl mx-1 shadow-sm transition-colors text-sm flex-1 uppercase tracking-wide',
+        denyButton: 'bg-red-500 hover:bg-red-600 text-white font-bold py-3 px-6 rounded-xl mx-1 shadow-sm transition-colors text-sm flex-1 uppercase tracking-wide',
+        actions: 'mt-8 border-t border-slate-100 pt-6 w-full flex justify-center gap-2 flex-wrap',
         htmlContainer: '!mx-1 !my-0',
       },
       preConfirm: () => {
@@ -286,6 +289,35 @@ export const GuruDashboard = ({ setActiveMenu }: { setActiveMenu?: (menu: string
       }
     });
 
+    if (result.isDenied) {
+      const confirmDelete = await Swal.fire({
+        title: 'Hapus Nilai?',
+        text: `Anda yakin ingin menghapus semua nilai setoran untuk ${surah}?`,
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#ef4444',
+        cancelButtonColor: '#94a3b8',
+        confirmButtonText: 'Ya, Hapus',
+        cancelButtonText: 'Batal',
+        customClass: {
+          popup: 'rounded-3xl',
+          confirmButton: 'rounded-xl font-bold tracking-wide uppercase',
+          cancelButton: 'rounded-xl font-bold tracking-wide uppercase',
+        }
+      });
+
+      if (confirmDelete.isConfirmed) {
+        for (const history of surahHistory) {
+          if (history.id) {
+            await deleteSetoran(history.id);
+          }
+        }
+        Swal.fire('Terhapus!', `Nilai setoran ${surah} telah dihapus.`, 'success');
+      }
+      return;
+    }
+
+    const formValues = result.value;
     if (formValues) {
       const existingMatch = surahHistory.find(s => s.ayat === formValues.ayat) || 
                             (!isJuz1To28 && surahHistory.length > 0 ? surahHistory[0] : null);

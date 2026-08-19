@@ -98,6 +98,11 @@ class AppState {
     try { await setDoc(doc(db, 'setoran', String(setoranInfo.id)), setoranInfo); } catch(e) {}
   }
 
+  async deleteSetoran(id: string | number) {
+    this.setoran = this.setoran.filter(s => s.id !== id);
+    try { await deleteDoc(doc(db, 'setoran', String(id))); } catch(e) {}
+  }
+
   async updateSetoran(setoranInfo: Setoran) {
     const idx = this.setoran.findIndex(s => s.id === setoranInfo.id);
     if (idx >= 0) {

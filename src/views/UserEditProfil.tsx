@@ -22,6 +22,29 @@ export const UserEditProfil = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  const handleLogout = () => {
+    Swal.fire({
+      title: 'Keluar Akun?',
+      text: 'Apakah Anda yakin ingin keluar dari akun ini?',
+      icon: 'question',
+      showCancelButton: true,
+      confirmButtonColor: '#ef4444',
+      cancelButtonColor: '#94a3b8',
+      confirmButtonText: 'Ya, Keluar',
+      cancelButtonText: 'Batal',
+      reverseButtons: true,
+      customClass: {
+        popup: 'rounded-3xl',
+        confirmButton: 'rounded-xl font-bold tracking-wide uppercase',
+        cancelButton: 'rounded-xl font-bold tracking-wide uppercase',
+      }
+    }).then((result) => {
+      if (result.isConfirmed) {
+        setUser(null);
+      }
+    });
+  };
+
   useEffect(() => {
     if (user?.role === 'siswa') {
       const currentSiswa = siswa.find(s => s.id === user.id);
@@ -188,7 +211,7 @@ export const UserEditProfil = () => {
             <div className="mt-6">
                 <button
                   type="button"
-                  onClick={() => setUser(null)}
+                  onClick={handleLogout}
                   className="w-full flex items-center justify-center gap-2 bg-white dark:bg-[#031433] border border-red-100 dark:border-red-900/30 hover:bg-red-50 dark:hover:bg-red-900/10 active:scale-95 text-red-600 dark:text-red-400 font-bold text-sm md:text-base px-6 py-4 rounded-xl transition-all shadow-sm cursor-pointer outline-none"
                 >
                   <LogOut className="w-5 h-5" />

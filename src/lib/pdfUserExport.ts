@@ -60,6 +60,16 @@ export const exportUserToPDF = async (siswaList: Siswa[], pengujiList: Penguji[]
     }
     isFirstPage = false;
 
+    // Group by penguji
+    const siswaByPenguji: Record<string, Siswa[]> = {};
+    for (const s of siswaForJuz) {
+      const pid = s.penguji_id || 'unknown';
+      if (!siswaByPenguji[pid]) {
+        siswaByPenguji[pid] = [];
+      }
+      siswaByPenguji[pid].push(s);
+    }
+
     if (logoBase64) {
       doc.addImage(logoBase64, 'PNG', 14, 10, 15, 15);
     }
@@ -71,55 +81,79 @@ export const exportUserToPDF = async (siswaList: Siswa[], pengujiList: Penguji[]
     doc.setFontSize(12);
     doc.text(`Juz ${juz}`, 105, 25, { align: 'center' });
 
-    // Sort by name
-    const sortedSiswa = [...siswaForJuz].sort((a, b) => a.nama.localeCompare(b.nama));
-
-    const tableData: any[][] = [];
+    let currentY = 32;
     let rowIndex = 1;
 
-    for (const s of sortedSiswa) {
-      tableData.push([
-        rowIndex++,
-        s.nama,
-        s.username || s.nis || '-', // User
-        s.password || '1234', // Sandi default / fallback
-      ]);
-    }
-
-    autoTable(doc, {
-      startY: 32,
-      head: [['No', 'Nama', 'User', 'Sandi']],
-      body: tableData,
-      theme: 'grid',
-      styles: {
-        fontSize: 10,
-        cellPadding: 1,
-        valign: 'middle',
-        textColor: [0, 0, 0],
-        lineColor: [0, 0, 0],
-        lineWidth: 0.1,
-        overflow: 'ellipsize'
-      },
-      headStyles: {
-        fillColor: [220, 220, 220],
-        textColor: [0, 0, 0],
-        halign: 'center',
-        fontStyle: 'bold',
-        lineColor: [0, 0, 0],
-        lineWidth: 0.1
-      },
-      bodyStyles: {
-        lineColor: [0, 0, 0],
-        lineWidth: 0.1
-      },
-      columnStyles: {
-        0: { halign: 'center' },
-        1: { },
-        2: { halign: 'center' },
-        3: { halign: 'center' },
-        4: { halign: 'center' }
-      }
+    // Sort penguji by name (get penguji objects to sort properly)
+    const pengujiIds = Object.keys(siswaByPenguji);
+    const sortedPengujiIds = pengujiIds.sort((a, b) => {
+      const pA = pengujiList.find(p => p.id === a)?.nama || 'Tanpa Penguji';
+      const pB = pengujiList.find(p => p.id === b)?.nama || 'Tanpa Penguji';
+      return pA.localeCompare(pB);
     });
+
+    for (const pid of sortedPengujiIds) {
+      const pName = pengujiList.find(p => p.id === pid)?.nama || 'Tanpa Penguji';
+      const pSiswa = [...siswaByPenguji[pid]].sort((a, b) => a.nama.localeCompare(b.nama));
+
+      doc.setFontSize(11);
+      doc.setFont("helvetica", "bold");
+      
+      // Check if we need a new page for the title and at least some table rows
+      if (currentY > 260) {
+        doc.addPage();
+        currentY = 20;
+      }
+      
+      doc.text(`Nama Penguji : ${pName}`, 14, currentY);
+      currentY += 4; // Add a little space before table
+
+      const tableData: any[][] = [];
+      for (const s of pSiswa) {
+        tableData.push([
+          rowIndex++,
+          s.nama,
+          s.username || s.nis || '-', // User
+          s.password || '1234', // Sandi default / fallback
+        ]);
+      }
+
+      autoTable(doc, {
+        startY: currentY,
+        head: [['No', 'Nama', 'User', 'Sandi']],
+        body: tableData,
+        theme: 'grid',
+        styles: {
+          fontSize: 10,
+          cellPadding: 1,
+          valign: 'middle',
+          textColor: [0, 0, 0],
+          lineColor: [0, 0, 0],
+          lineWidth: 0.1,
+          overflow: 'ellipsize'
+        },
+        headStyles: {
+          fillColor: [220, 220, 220],
+          textColor: [0, 0, 0],
+          halign: 'center',
+          fontStyle: 'bold',
+          lineColor: [0, 0, 0],
+          lineWidth: 0.1
+        },
+        bodyStyles: {
+          lineColor: [0, 0, 0],
+          lineWidth: 0.1
+        },
+        columnStyles: {
+          0: { halign: 'center', cellWidth: 15 },
+          1: { },
+          2: { halign: 'center', cellWidth: 40 },
+          3: { halign: 'center', cellWidth: 30 }
+        }
+      });
+
+      currentY = (doc as any).lastAutoTable.finalY + 10;
+    }
   }
 
   doc.save(`Data_User_Peserta_Sertifikasi.pdf`);
