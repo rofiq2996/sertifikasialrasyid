@@ -114,15 +114,27 @@ export const MainLayout = () => {
             }
           }).then((result) => {
             if (result.isConfirmed) {
-              if ((navigator as any).app && (navigator as any).app.exitApp) {
+              // Try various methods to exit depending on the app wrapper
+              if ((window as any).Capacitor && (window as any).Capacitor.Plugins && (window as any).Capacitor.Plugins.App) {
+                (window as any).Capacitor.Plugins.App.exitApp();
+              } else if ((navigator as any).app && (navigator as any).app.exitApp) {
                 (navigator as any).app.exitApp();
               } else if ((navigator as any).device && (navigator as any).device.exitApp) {
                 (navigator as any).device.exitApp();
               } else if ((window as any).ReactNativeWebView) {
                 (window as any).ReactNativeWebView.postMessage('exit');
+              } else if ((window as any).Android && (window as any).Android.exitApp) {
+                (window as any).Android.exitApp();
+              } else if ((window as any).Android && (window as any).Android.finish) {
+                (window as any).Android.finish();
               } else {
+                // For generic browsers or PWAs
+                window.open('', '_self');
                 window.close();
-                window.history.go(-2);
+                // If window.close() is blocked, try going back in history to exit naturally
+                setTimeout(() => {
+                  window.history.go(-2);
+                }, 100);
               }
             }
           });
