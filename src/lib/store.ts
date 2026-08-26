@@ -99,6 +99,17 @@ class AppState {
   }
 
   async deleteSetoran(id: string | number) {
+    const itemToDelete = this.setoran.find(s => s.id === id);
+    if (itemToDelete) {
+      try {
+        await setDoc(doc(db, 'recycle_bin', String(id)), {
+          id: String(id),
+          type: 'setoran',
+          originalData: itemToDelete,
+          deletedAt: Date.now()
+        });
+      } catch (e) { console.error(e); }
+    }
     this.setoran = this.setoran.filter(s => s.id !== id);
     try { await deleteDoc(doc(db, 'setoran', String(id))); } catch(e) {}
   }
@@ -126,6 +137,17 @@ class AppState {
   }
 
   async deleteSiswa(id: string) {
+    const itemToDelete = this.siswa.find(s => s.id === id);
+    if (itemToDelete) {
+      try {
+        await setDoc(doc(db, 'recycle_bin', String(id)), {
+          id: String(id),
+          type: 'siswa',
+          originalData: itemToDelete,
+          deletedAt: Date.now()
+        });
+      } catch (e) { console.error(e); }
+    }
     this.siswa = this.siswa.filter(s => s.id !== id);
     await deleteDoc(doc(db, 'siswa', String(id)));
     await this.clearSetoranSiswa([id]);
@@ -145,6 +167,17 @@ class AppState {
   }
 
   async deletePenguji(id: string) {
+    const itemToDelete = this.penguji.find(p => p.id === id);
+    if (itemToDelete) {
+      try {
+        await setDoc(doc(db, 'recycle_bin', String(id)), {
+          id: String(id),
+          type: 'penguji',
+          originalData: itemToDelete,
+          deletedAt: Date.now()
+        });
+      } catch (e) { console.error(e); }
+    }
     this.penguji = this.penguji.filter(p => p.id !== id);
     await deleteDoc(doc(db, 'penguji', String(id)));
   }
@@ -163,6 +196,17 @@ class AppState {
   }
 
   async deleteKelas(id: string) {
+    const itemToDelete = this.kelas.find(k => k.id === id);
+    if (itemToDelete) {
+      try {
+        await setDoc(doc(db, 'recycle_bin', String(id)), {
+          id: String(id),
+          type: 'kelas',
+          originalData: itemToDelete,
+          deletedAt: Date.now()
+        });
+      } catch (e) { console.error(e); }
+    }
     this.kelas = this.kelas.filter(k => k.id !== id);
     await deleteDoc(doc(db, 'kelas', String(id)));
   }

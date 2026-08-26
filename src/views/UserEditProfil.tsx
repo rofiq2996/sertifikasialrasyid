@@ -49,31 +49,31 @@ export const UserEditProfil = () => {
     if (user?.role === 'siswa') {
       const currentSiswa = siswa.find(s => s.id === user.id);
       if (currentSiswa) {
-        setFormData({
-          ...formData,
+        setFormData(prev => ({
+          ...prev,
           nama: currentSiswa.nama || '',
           username: currentSiswa.username || '',
           password: currentSiswa.password || '',
           nama_ayah: currentSiswa.nama_ayah || '',
           bin_binti: currentSiswa.bin_binti || 'Bin'
-        });
+        }));
       }
     } else if (user?.role === 'guru') {
       const currentGuru = penguji.find(p => p.id === user.id);
       if (currentGuru) {
-        setFormData({
-          ...formData,
+        setFormData(prev => ({
+          ...prev,
           nama: currentGuru.nama || '',
           username: currentGuru.username || '',
           password: currentGuru.password || ''
-        });
+        }));
       }
     } else if (user?.role === 'admin') {
-      setFormData({
-        ...formData,
-        nama: user.nama || 'Admiusernametrator',
+      setFormData(prev => ({
+        ...prev,
+        nama: user.nama || 'Administrator',
         username: 'admin'
-      });
+      }));
     }
   }, [user, siswa, penguji]);
 
@@ -91,24 +91,30 @@ export const UserEditProfil = () => {
 
     setIsSubmitting(true);
     try {
-      if (user.role === 'siswa' && currentSiswa) {
-        await updateSiswa({
-          ...currentSiswa,
-          nama: formData.nama,
-          username: formData.username,
-          password: formData.password,
-          nama_ayah: formData.nama_ayah,
-          bin_binti: formData.bin_binti
-        });
-        setUser({ ...user, nama: formData.nama });
-      } else if (user.role === 'guru' && currentGuru) {
-        await updatePenguji({
-          ...currentGuru,
-          nama: formData.nama,
-          username: formData.username,
-          password: formData.password
-        });
-        setUser({ ...user, nama: formData.nama });
+      if (user.role === 'siswa') {
+        const freshSiswa = siswa.find(s => s.id === user.id);
+        if (freshSiswa) {
+          await updateSiswa({
+            ...freshSiswa,
+            nama: formData.nama.trim(),
+            username: formData.username.trim(),
+            password: formData.password.trim(),
+            nama_ayah: formData.nama_ayah.trim(),
+            bin_binti: formData.bin_binti
+          });
+          setUser({ ...user, nama: formData.nama.trim() });
+        }
+      } else if (user.role === 'guru') {
+        const freshGuru = penguji.find(p => p.id === user.id);
+        if (freshGuru) {
+          await updatePenguji({
+            ...freshGuru,
+            nama: formData.nama.trim(),
+            username: formData.username.trim(),
+            password: formData.password.trim()
+          });
+          setUser({ ...user, nama: formData.nama.trim() });
+        }
       }
 
       Swal.fire({

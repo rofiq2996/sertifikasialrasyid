@@ -52,3 +52,10 @@ export interface Setoran {
   nilai: Nilai;
   is_revised?: boolean;
 }
+
+export interface RecycleBinItem {
+  id: string; // The ID of the recycle bin entry (usually same as original ID)
+  type: 'siswa' | 'penguji' | 'setoran' | 'kelas';
+  originalData: any;
+  deletedAt: number;
+}

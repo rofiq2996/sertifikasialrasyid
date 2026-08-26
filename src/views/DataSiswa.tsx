@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Search, DownloadCloud, UploadCloud, Plus, Edit2, Trash2, BarChart2, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Search, DownloadCloud, UploadCloud, Plus, Edit2, Trash2, BarChart2, ChevronLeft, ChevronRight, Filter } from 'lucide-react';
 import { useAppContext } from '../lib/AppContext';
 import Swal from 'sweetalert2';
 import * as XLSX from 'xlsx';
@@ -24,10 +24,28 @@ export const DataSiswa = () => {
   const [isStatistikOpen, setIsStatistikOpen] = useState(false);
   const [statistikSiswa, setStatistikSiswa] = useState<Siswa | null>(null);
 
+  const [showDuplicates, setShowDuplicates] = useState(false);
+
   const isAdmin = user?.role === 'admin';
+
+  const duplicateNames = React.useMemo(() => {
+    const nameCounts = new Map<string, number>();
+    siswa.forEach(s => {
+      const lowerName = s.nama.trim().toLowerCase();
+      nameCounts.set(lowerName, (nameCounts.get(lowerName) || 0) + 1);
+    });
+    const duplicates = new Set<string>();
+    nameCounts.forEach((count, name) => {
+      if (count > 1) duplicates.add(name);
+    });
+    return duplicates;
+  }, [siswa]);
 
   const filteredSiswa = siswa.filter(s => {
     if (user?.role === 'guru' && s.penguji_id !== user.id) return false;
+    
+    if (showDuplicates && !duplicateNames.has(s.nama.trim().toLowerCase())) return false;
+
     if (search && !s.nama.toLowerCase().includes(search.toLowerCase()) && !((s.username || s.nis || '').toLowerCase().includes(search.toLowerCase()))) return false;
     return true;
   });
@@ -56,13 +74,24 @@ export const DataSiswa = () => {
   const handleSaveSiswa = async (formData: Siswa) => {
     try {
       if (editingSiswa) {
+        const isDuplicate = siswa.some(s => s.id !== formData.id && s.nama.trim().toLowerCase() === formData.nama.trim().toLowerCase());
+        if (isDuplicate) {
+           Swal.fire('Error', `Nama "${formData.nama}" sudah ada di sistem. Ditolak karena identik.`, 'error');
+           throw new Error("Duplicate");
+        }
         await updateSiswa(formData);
         Swal.fire({ title: 'Berhasil', text: 'Data siswa berhasil diupdate', icon: 'success', toast: true, position: 'top-end', showConfirmButton: false, timer: 3000 });
       } else {
+        const isDuplicate = siswa.some(s => s.nama.trim().toLowerCase() === formData.nama.trim().toLowerCase());
+        if (isDuplicate) {
+           Swal.fire('Error', `Nama "${formData.nama}" sudah ada di sistem. Ditolak karena identik.`, 'error');
+           throw new Error("Duplicate");
+        }
         await addSiswa(formData);
         Swal.fire({ title: 'Berhasil', text: 'Siswa berhasil ditambahkan', icon: 'success', toast: true, position: 'top-end', showConfirmButton: false, timer: 3000 });
       }
     } catch (e) {
+      if (e instanceof Error && e.message === "Duplicate") throw e;
       Swal.fire('Error', 'Gagal menyimpan data', 'error');
       throw e; // To keep modal open if there's an error
     }
@@ -141,9 +170,11 @@ export const DataSiswa = () => {
         });
         
         const existingUsernames = new Set<string>();
+        const existingNames = new Set<string>();
         siswa.forEach(s => {
            if(s.username) existingUsernames.add(s.username);
            else if(s.nis) existingUsernames.add(s.nis);
+           existingNames.add(s.nama.trim().toLowerCase());
         });
 
         for (const row of data) {
@@ -153,28 +184,50 @@ export const DataSiswa = () => {
           }
           
           try {
-            const rowNama = String(row.Nama);
-            const generatedUsername = generateUsername(rowNama, existingUsernames);
+            const rowNama = String(row.Nama).trim();
+            const lowerNama = rowNama.toLowerCase();
             
             let pengujiId = '';
             if (row['Username Penguji']) {
               const matchedPenguji = penguji.find(p => p.username === String(row['Username Penguji']));
               if (matchedPenguji) pengujiId = matchedPenguji.id;
             }
-            
-            await addSiswa({
-              id: 'S' + Date.now() + Math.floor(Math.random() * 1000),
-              nis: '',
-              username: generatedUsername,
-              password: '123',
-              nama: rowNama,
-              bin_binti: row['Bin/Binti'] || '',
-              nama_ayah: String(row['Nama Ayah'] || ''),
-              gender: (row['Jenis Kelamin'] === 'L' || row['Jenis Kelamin'] === 'P') ? row['Jenis Kelamin'] : 'L',
-              target: String(row['Target Juz']).split(',').map((n: string) => Number(n.trim())).filter((n: number) => !isNaN(n)),
-              penguji_id: pengujiId
-            });
-            successCount++;
+
+            const existingStudent = siswa.find(s => s.nama.trim().toLowerCase() === lowerNama);
+
+            if (existingStudent) {
+               // Update existing student
+               await updateSiswa({
+                 ...existingStudent,
+                 bin_binti: row['Bin/Binti'] || existingStudent.bin_binti,
+                 nama_ayah: String(row['Nama Ayah'] || existingStudent.nama_ayah),
+                 gender: (row['Jenis Kelamin'] === 'L' || row['Jenis Kelamin'] === 'P') ? row['Jenis Kelamin'] : existingStudent.gender,
+                 target: String(row['Target Juz']).split(',').map((n: string) => Number(n.trim())).filter((n: number) => !isNaN(n)),
+                 penguji_id: pengujiId || existingStudent.penguji_id
+               });
+               successCount++;
+            } else {
+               // Add new student
+               if (!existingNames.has(lowerNama)) {
+                 existingNames.add(lowerNama);
+                 const generatedUsername = generateUsername(rowNama, existingUsernames);
+                 await addSiswa({
+                   id: 'S' + Date.now() + Math.floor(Math.random() * 1000),
+                   nis: '',
+                   username: generatedUsername,
+                   password: '123',
+                   nama: rowNama,
+                   bin_binti: row['Bin/Binti'] || '',
+                   nama_ayah: String(row['Nama Ayah'] || ''),
+                   gender: (row['Jenis Kelamin'] === 'L' || row['Jenis Kelamin'] === 'P') ? row['Jenis Kelamin'] : 'L',
+                   target: String(row['Target Juz']).split(',').map((n: string) => Number(n.trim())).filter((n: number) => !isNaN(n)),
+                   penguji_id: pengujiId
+                 });
+                 successCount++;
+               } else {
+                 failCount++; // Duplicate within the excel file itself
+               }
+            }
           } catch (err) {
             failCount++;
           }
@@ -211,9 +264,14 @@ export const DataSiswa = () => {
         
         <div className="grid grid-cols-2 md:flex gap-2 w-full md:w-auto flex-wrap">
           {(isAdmin || user?.role === 'guru') && (
-            <button onClick={handleExportUserPDF} className="flex items-center justify-center space-x-2 bg-red-50 text-red-700 hover:bg-red-100 active:scale-[0.98] dark:bg-red-900/30 dark:text-red-400 py-3 md:py-2 md:px-4 rounded-xl text-sm font-semibold transition-all border border-red-100 dark:border-red-800/50 tap-bounce" title="Download Data User PDF">
-              <DownloadCloud className="w-4 h-4" /> <span>User</span>
-            </button>
+            <>
+              <button onClick={() => setShowDuplicates(!showDuplicates)} className={`flex items-center justify-center space-x-2 ${showDuplicates ? 'bg-orange-500 text-white border-orange-600 hover:bg-orange-600 dark:bg-orange-600 dark:border-orange-700 dark:text-white dark:hover:bg-orange-700' : 'bg-orange-50 text-orange-700 border-orange-100 hover:bg-orange-100 dark:bg-orange-900/30 dark:border-orange-800/50 dark:text-orange-400'} py-3 md:py-2 md:px-4 rounded-xl text-sm font-semibold transition-all border active:scale-[0.98] tap-bounce`} title="Filter Data Dobel">
+                <Filter className="w-4 h-4" /> <span>{showDuplicates ? 'Semua' : 'Dobel'}</span>
+              </button>
+              <button onClick={handleExportUserPDF} className="flex items-center justify-center space-x-2 bg-red-50 text-red-700 hover:bg-red-100 active:scale-[0.98] dark:bg-red-900/30 dark:text-red-400 py-3 md:py-2 md:px-4 rounded-xl text-sm font-semibold transition-all border border-red-100 dark:border-red-800/50 tap-bounce" title="Download Data User PDF">
+                <DownloadCloud className="w-4 h-4" /> <span>User</span>
+              </button>
+            </>
           )}
           {isAdmin && (
             <>

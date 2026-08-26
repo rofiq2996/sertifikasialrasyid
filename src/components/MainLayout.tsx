@@ -96,48 +96,29 @@ export const MainLayout = () => {
         
         if (Swal.isVisible()) {
           Swal.close();
+        }
+        
+        // Try various methods to exit depending on the app wrapper
+        if ((window as any).Capacitor && (window as any).Capacitor.Plugins && (window as any).Capacitor.Plugins.App) {
+          (window as any).Capacitor.Plugins.App.exitApp();
+        } else if ((navigator as any).app && (navigator as any).app.exitApp) {
+          (navigator as any).app.exitApp();
+        } else if ((navigator as any).device && (navigator as any).device.exitApp) {
+          (navigator as any).device.exitApp();
+        } else if ((window as any).ReactNativeWebView) {
+          (window as any).ReactNativeWebView.postMessage('exit');
+        } else if ((window as any).Android && (window as any).Android.exitApp) {
+          (window as any).Android.exitApp();
+        } else if ((window as any).Android && (window as any).Android.finish) {
+          (window as any).Android.finish();
         } else {
-          Swal.fire({
-            title: 'Keluar Aplikasi?',
-            text: 'Apakah Anda yakin ingin keluar dari aplikasi?',
-            icon: 'warning',
-            showCancelButton: true,
-            confirmButtonColor: '#ef4444',
-            cancelButtonColor: '#94a3b8',
-            confirmButtonText: 'Ya, Keluar',
-            cancelButtonText: 'Batal',
-            reverseButtons: true,
-            customClass: {
-              popup: 'rounded-3xl',
-              confirmButton: 'rounded-xl font-bold tracking-wide uppercase',
-              cancelButton: 'rounded-xl font-bold tracking-wide uppercase',
-            }
-          }).then((result) => {
-            if (result.isConfirmed) {
-              // Try various methods to exit depending on the app wrapper
-              if ((window as any).Capacitor && (window as any).Capacitor.Plugins && (window as any).Capacitor.Plugins.App) {
-                (window as any).Capacitor.Plugins.App.exitApp();
-              } else if ((navigator as any).app && (navigator as any).app.exitApp) {
-                (navigator as any).app.exitApp();
-              } else if ((navigator as any).device && (navigator as any).device.exitApp) {
-                (navigator as any).device.exitApp();
-              } else if ((window as any).ReactNativeWebView) {
-                (window as any).ReactNativeWebView.postMessage('exit');
-              } else if ((window as any).Android && (window as any).Android.exitApp) {
-                (window as any).Android.exitApp();
-              } else if ((window as any).Android && (window as any).Android.finish) {
-                (window as any).Android.finish();
-              } else {
-                // For generic browsers or PWAs
-                window.open('', '_self');
-                window.close();
-                // If window.close() is blocked, try going back in history to exit naturally
-                setTimeout(() => {
-                  window.history.go(-2);
-                }, 100);
-              }
-            }
-          });
+          // For generic browsers or PWAs
+          window.open('', '_self');
+          window.close();
+          // If window.close() is blocked, try going back in history to exit naturally
+          setTimeout(() => {
+            window.history.go(-2);
+          }, 100);
         }
       }
     };
