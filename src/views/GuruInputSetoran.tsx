@@ -90,6 +90,8 @@ export const GuruInputSetoran = () => {
       <div class="border-t border-slate-100 mb-6 w-full"></div>
     ` : '';
 
+    const todayDateStr = new Date().toISOString().split('T')[0];
+
     const result = await Swal.fire({
       html: `
         <h2 class="text-xl sm:text-2xl font-bold text-slate-800 text-center mb-6 mt-2">Input Setoran</h2>
@@ -124,6 +126,10 @@ export const GuruInputSetoran = () => {
         ` : ''}
 
         ${kriteriaHtml}
+        <div class="mb-4 text-left">
+          <label class="block text-sm font-semibold text-slate-800 mb-2">Tanggal Setor</label>
+          <input type="date" id="swal-tgl-setor" class="w-full px-4 py-3 border border-slate-200 rounded-xl focus:ring-[#d19e44] focus:border-[#d19e44] outline-none text-slate-800 font-medium bg-slate-50" value="${todayDateStr}">
+        </div>
         <div class="text-left mt-2 mb-4">
           <label class="block text-sm font-semibold text-slate-800 mb-3">Nilai Kelancaran</label>
           <div class="grid grid-cols-3 gap-3">
@@ -160,6 +166,7 @@ export const GuruInputSetoran = () => {
         const checked = document.querySelector('input[name="swal-rating"]:checked') as HTMLInputElement;
         const ayatAwalInput = document.getElementById('swal-ayat-awal') as HTMLInputElement | null;
         const ayatAkhirInput = document.getElementById('swal-ayat-akhir') as HTMLInputElement | null;
+        const tglSetorInput = document.getElementById('swal-tgl-setor') as HTMLInputElement | null;
         
         if (!checked) {
           Swal.showValidationMessage('Pilih nilai terlebih dahulu');
@@ -252,9 +259,18 @@ export const GuruInputSetoran = () => {
           }
         }
 
+        let tglValue = new Date().toISOString();
+        if (tglSetorInput && tglSetorInput.value) {
+            const selectedDate = new Date(tglSetorInput.value);
+            const now = new Date();
+            selectedDate.setHours(now.getHours(), now.getMinutes(), now.getSeconds());
+            tglValue = selectedDate.toISOString();
+        }
+
         return {
           status: checked.value,
-          ayat: ayatValue
+          ayat: ayatValue,
+          tgl: tglValue
         };
       }
     });
@@ -296,18 +312,19 @@ export const GuruInputSetoran = () => {
          await updateSetoran({
            ...existingMatch,
            nilai: formValues.status,
-           tgl: new Date().toISOString(),
+           tgl: formValues.tgl,
            is_revised: true
          });
          Swal.fire('Catatan Diperbarui!', `Nilai ${surah} berhasil disimpan`, 'success');
       } else {
          await addSetoran({
+           id: 'ST' + Date.now() + Math.floor(Math.random() * 1000),
            siswa_id: selectedSiswaId,
            juz: selectedJuz,
            surah: surah,
            ayat: formValues.ayat,
            nilai: formValues.status,
-           tgl: new Date().toISOString()
+           tgl: formValues.tgl
          });
          Swal.fire('Tersimpan!', `Nilai ${surah} berhasil disimpan`, 'success');
       }
