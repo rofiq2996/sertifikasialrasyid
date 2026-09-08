@@ -102,11 +102,18 @@ export const AdminValidasiSertifikat = () => {
     }
   };
 
+  const [initialAutoValidateDone, setInitialAutoValidateDone] = useState(() => {
+    const params = new URLSearchParams(window.location.search);
+    return !params.get("verify");
+  });
+
   React.useEffect(() => {
-    if (sertifikatId) {
+    // Only auto-validate on initial load if URL contains verify param and data is ready
+    if (sertifikatId && !initialAutoValidateDone && siswa.length > 0) {
       executeValidation(sertifikatId);
+      setInitialAutoValidateDone(true);
     }
-  }, []);
+  }, [sertifikatId, siswa, setoran, initialAutoValidateDone]);
 
   const handleScan = (result: any) => {
     if (result && result.length > 0) {

@@ -21,20 +21,23 @@ const DEFAULT_PORTRAIT_ELEMENTS: CertElement[] = [
 ];
 
 export const Sertifikat = ({ inlineStudentView = false }: { inlineStudentView?: boolean }) => {
-  const { user, siswa, setoran } = useAppContext();
+  const { user, siswa, setoran, settings, updateSettings } = useAppContext();
   const [isDownloading, setIsDownloading] = useState(false);
   const [isPreviewing, setIsPreviewing] = useState<string | null>(null);
   const [previewData, setPreviewData] = useState<{ id: string, name: string, dataUrl: string } | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
-  const [certNumFormat, setCertNumFormat] = useState(() => localStorage.getItem('certNumFormat') || 'Nomor: 2688/S.144.***/IV/2026');
-  const [certStartNum, setCertStartNum] = useState(() => Number(localStorage.getItem('certStartNum')) || 1);
-  const [certPlace, setCertPlace] = useState(() => localStorage.getItem('certPlace') || 'Batam');
-  const [certDate, setCertDate] = useState(() => localStorage.getItem('certDate') || '23 Mei 2026');
+  const [certNumFormat, setCertNumFormat] = useState(() => settings?.certNumFormat || localStorage.getItem('certNumFormat') || 'Nomor: 2688/S.144.***/IV/2026');
+  const [certStartNum, setCertStartNum] = useState(() => settings?.certStartNum || Number(localStorage.getItem('certStartNum')) || 1);
+  const [certPlace, setCertPlace] = useState(() => settings?.certPlace || localStorage.getItem('certPlace') || 'Batam');
+  const [certDate, setCertDate] = useState(() => settings?.certDate || localStorage.getItem('certDate') || '23 Mei 2026');
   const [showSettings, setShowSettings] = useState(false);
 
   // Editor states
   const [showEditor, setShowEditor] = useState(false);
   const [templates, setTemplates] = useState<{id: string, name: string, elements: CertElement[], bgUrl: string|null, isPortrait: boolean, printBg: boolean}[]>(() => {
+    if (settings?.certTemplates && Array.isArray(settings.certTemplates) && settings.certTemplates.length > 0) {
+      return settings.certTemplates;
+    }
     const saved = localStorage.getItem('certTemplates');
     if (saved) return JSON.parse(saved);
 
@@ -60,9 +63,22 @@ export const Sertifikat = ({ inlineStudentView = false }: { inlineStudentView?: 
   });
 
   const [selectedTemplateId, setSelectedTemplateId] = useState<string>(() => {
-    const saved = localStorage.getItem('certSelectedTemplateId');
-    return saved || 'default';
+    return settings?.certSelectedTemplateId || localStorage.getItem('certSelectedTemplateId') || 'default';
   });
+
+  React.useEffect(() => {
+    if (settings?.certTemplates && Array.isArray(settings.certTemplates) && settings.certTemplates.length > 0) {
+      setTemplates(settings.certTemplates);
+      if (settings.certSelectedTemplateId) {
+        setSelectedTemplateId(settings.certSelectedTemplateId);
+      }
+    }
+    if (settings?.certNumFormat) setCertNumFormat(settings.certNumFormat);
+    if (settings?.certStartNum) setCertStartNum(settings.certStartNum);
+    if (settings?.certPlace) setCertPlace(settings.certPlace);
+    if (settings?.certDate) setCertDate(settings.certDate);
+    if (settings?.customCertNums) setCustomCertNums(settings.customCertNums);
+  }, [settings]);
 
   const [pendingSave, setPendingSave] = useState<{ elements: CertElement[], bgUrl: string|null, isPortrait: boolean, printBg: boolean } | null>(null);
   const [templateNameInput, setTemplateNameInput] = useState('');
@@ -78,6 +94,7 @@ export const Sertifikat = ({ inlineStudentView = false }: { inlineStudentView?: 
     return saved ? JSON.parse(saved) : {};
   });
 
+  const [searchTerm, setSearchTerm] = useState('');
   const itemsPerPage = 5;
 
   const getTuntasJuz = (s: Siswa, allSetoran: Setoran[]) => {
@@ -187,8 +204,17 @@ export const Sertifikat = ({ inlineStudentView = false }: { inlineStudentView?: 
     }
   }, [eligibleStudents, certNumFormat, certStartNum, customCertNums]);
 
-  const totalPages = Math.ceil(studentsWithStatus.length / itemsPerPage);
-  const paginatedStudents = studentsWithStatus.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
+  const filteredStudents = useMemo(() => {
+    if (!searchTerm.trim()) return studentsWithStatus;
+    const lowerSearch = searchTerm.toLowerCase();
+    return studentsWithStatus.filter(s => 
+      s.nama.toLowerCase().includes(lowerSearch) || 
+      (s.nis && s.nis.toLowerCase().includes(lowerSearch))
+    );
+  }, [studentsWithStatus, searchTerm]);
+
+  const totalPages = Math.ceil(filteredStudents.length / itemsPerPage);
+  const paginatedStudents = filteredStudents.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
 
   const lockGeneratedNumber = (studentId: string) => {
     const index = eligibleStudents.findIndex(s => s.id === studentId);
@@ -199,6 +225,7 @@ export const Sertifikat = ({ inlineStudentView = false }: { inlineStudentView?: 
       const generatedNum = certNumFormat.replace('***', String(certStartNum + index).padStart(3, '0'));
       const newNums = { ...prevNums, [studentId]: generatedNum };
       localStorage.setItem('customCertNums', JSON.stringify(newNums));
+      updateSettings({ customCertNums: newNums });
       return newNums;
     });
   };
@@ -215,6 +242,7 @@ export const Sertifikat = ({ inlineStudentView = false }: { inlineStudentView?: 
       });
       if (changed) {
          localStorage.setItem('customCertNums', JSON.stringify(newNums));
+         updateSettings({ customCertNums: newNums });
          return newNums;
       }
       return prevNums;
@@ -340,35 +368,53 @@ export const Sertifikat = ({ inlineStudentView = false }: { inlineStudentView?: 
             </div>
           </div>
           {eligibleStudents.length > 0 && user && (
-            <div className="flex flex-col sm:flex-row items-center gap-3 w-full lg:w-auto shrink-0 relative z-10">
-              <button 
-                onClick={() => handlePreview(user.id, siswa.find(s=>s.id===user.id)?.nama || 'Siswa')}
-                className="w-full sm:w-auto bg-white/10 hover:bg-white/20 active:scale-95 text-white font-bold text-xs md:text-sm px-5 py-3 rounded-2xl border border-white/20 backdrop-blur-md transition-all flex items-center justify-center gap-2 shadow-sm disabled:opacity-50"
-                disabled={!!isPreviewing || isDownloading}
-              >
-                {isPreviewing === user.id ? (
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                ) : (
-                  <Eye className="w-4 h-4 text-[#d19e44]/70" />
-                )}
-                <span>Preview</span>
-              </button>
-              <button 
-                onClick={() => handleDownload(user.id, siswa.find(s=>s.id===user.id)?.nama || 'Siswa', 'pdf')}
-                className="w-full sm:w-auto bg-white hover:bg-slate-50 active:scale-95 text-emerald-700 font-extrabold text-xs md:text-sm px-5 py-2.5 rounded-2xl transition-all flex items-center justify-center gap-2 shadow-sm disabled:opacity-50"
-                disabled={!!isPreviewing || isDownloading}
-              >
-                <FileText className="w-4 h-4 text-red-500 animate-pulse" />
-                <span>Format PDF</span>
-              </button>
-              <button 
-                onClick={() => handleDownload(user.id, siswa.find(s=>s.id===user.id)?.nama || 'Siswa', 'jpg')}
-                className="w-full sm:w-auto bg-white hover:bg-slate-50 active:scale-95 text-emerald-700 font-extrabold text-xs md:text-sm px-5 py-2.5 rounded-2xl transition-all flex items-center justify-center gap-2 shadow-sm disabled:opacity-50"
-                disabled={!!isPreviewing || isDownloading}
-              >
-                <FileImage className="w-4 h-4 text-[#d19e44]" />
-                <span>Format JPG</span>
-              </button>
+            <div className="flex flex-col items-end gap-3 w-full lg:w-auto shrink-0 relative z-10">
+              {templates.length > 1 && (
+                <div className="w-full sm:w-auto flex items-center justify-end">
+                  <select
+                    value={selectedTemplateId}
+                    onChange={(e) => {
+                      setSelectedTemplateId(e.target.value);
+                      localStorage.setItem('certSelectedTemplateId', e.target.value);
+                    }}
+                    className="px-3 py-1.5 rounded-xl bg-white/20 text-white border border-white/30 outline-none focus:ring-2 focus:ring-white/50 backdrop-blur-md text-sm cursor-pointer shadow-sm w-full"
+                  >
+                    {templates.map(t => (
+                      <option key={t.id} value={t.id} className="text-slate-800 bg-white">{t.name}</option>
+                    ))}
+                  </select>
+                </div>
+              )}
+              <div className="flex flex-col sm:flex-row items-center gap-3 w-full">
+                <button 
+                  onClick={() => handlePreview(user.id, siswa.find(s=>s.id===user.id)?.nama || 'Siswa')}
+                  className="w-full sm:w-auto bg-white/10 hover:bg-white/20 active:scale-95 text-white font-bold text-xs md:text-sm px-5 py-3 rounded-2xl border border-white/20 backdrop-blur-md transition-all flex items-center justify-center gap-2 shadow-sm disabled:opacity-50"
+                  disabled={!!isPreviewing || isDownloading}
+                >
+                  {isPreviewing === user.id ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <Eye className="w-4 h-4 text-[#d19e44]/70" />
+                  )}
+                  <span>Preview</span>
+                </button>
+                <button 
+                  onClick={() => handleDownload(user.id, siswa.find(s=>s.id===user.id)?.nama || 'Siswa', 'pdf')}
+                  className="w-full sm:w-auto bg-white hover:bg-slate-50 active:scale-95 text-emerald-700 font-extrabold text-xs md:text-sm px-5 py-2.5 rounded-2xl transition-all flex items-center justify-center gap-2 shadow-sm disabled:opacity-50"
+                  disabled={!!isPreviewing || isDownloading}
+                >
+                  <FileText className="w-4 h-4 text-red-500 animate-pulse" />
+                  <span>Format PDF</span>
+                </button>
+                <button 
+                  onClick={() => handleDownload(user.id, siswa.find(s=>s.id===user.id)?.nama || 'Siswa', 'jpg')}
+                  className="w-full sm:w-auto bg-white hover:bg-slate-50 active:scale-95 text-emerald-700 font-extrabold text-xs md:text-sm px-5 py-2.5 rounded-2xl transition-all flex items-center justify-center gap-2 shadow-sm disabled:opacity-50"
+                  disabled={!!isPreviewing || isDownloading}
+                >
+                  <FileImage className="w-4 h-4 text-[#d19e44]" />
+                  <span>Format JPG</span>
+                </button>
+              </div>
             </div>
           )}
         </div>
@@ -439,6 +485,7 @@ export const Sertifikat = ({ inlineStudentView = false }: { inlineStudentView?: 
                     onChange={(e) => {
                       setSelectedTemplateId(e.target.value);
                       localStorage.setItem('certSelectedTemplateId', e.target.value);
+                      updateSettings({ certSelectedTemplateId: e.target.value });
                     }}
                     className="flex-1 max-w-sm px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-700 text-slate-800 dark:text-slate-100 outline-none focus:ring-2 focus:ring-[#d19e44] shadow-sm"
                   >
@@ -455,6 +502,7 @@ export const Sertifikat = ({ inlineStudentView = false }: { inlineStudentView?: 
                           setSelectedTemplateId(newTemplates[0].id);
                           localStorage.setItem('certTemplates', JSON.stringify(newTemplates));
                           localStorage.setItem('certSelectedTemplateId', newTemplates[0].id);
+                          updateSettings({ certTemplates: newTemplates, certSelectedTemplateId: newTemplates[0].id });
                         }
                       }}
                       className="flex items-center justify-center bg-red-50 hover:bg-red-100 text-red-600 dark:bg-red-900/30 dark:hover:bg-red-900/50 dark:text-red-400 py-2 px-3 rounded-xl transition-all shadow-sm"
@@ -473,6 +521,7 @@ export const Sertifikat = ({ inlineStudentView = false }: { inlineStudentView?: 
                   onChange={(e) => {
                     setCertNumFormat(e.target.value);
                     localStorage.setItem('certNumFormat', e.target.value);
+                    updateSettings({ certNumFormat: e.target.value });
                   }}
                   className="w-full px-4 py-2 rounded-xl border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-700 text-slate-800 dark:text-slate-100 focus:ring-2 focus:ring-[#d19e44] outline-none"
                   placeholder="Nomor: 2688/S.144.***/IV/2026"
@@ -488,6 +537,7 @@ export const Sertifikat = ({ inlineStudentView = false }: { inlineStudentView?: 
                     const val = parseInt(e.target.value) || 1;
                     setCertStartNum(val);
                     localStorage.setItem('certStartNum', String(val));
+                    updateSettings({ certStartNum: val });
                   }}
                   className="w-full px-4 py-2 rounded-xl border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-700 text-slate-800 dark:text-slate-100 focus:ring-2 focus:ring-[#d19e44] outline-none"
                 />
@@ -500,6 +550,7 @@ export const Sertifikat = ({ inlineStudentView = false }: { inlineStudentView?: 
                   onChange={(e) => {
                     setCertPlace(e.target.value);
                     localStorage.setItem('certPlace', e.target.value);
+                    updateSettings({ certPlace: e.target.value });
                   }}
                   className="w-full px-4 py-2 rounded-xl border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-700 text-slate-800 dark:text-slate-100 focus:ring-2 focus:ring-[#d19e44] outline-none"
                   placeholder="Batam"
@@ -513,6 +564,7 @@ export const Sertifikat = ({ inlineStudentView = false }: { inlineStudentView?: 
                   onChange={(e) => {
                     setCertDate(e.target.value);
                     localStorage.setItem('certDate', e.target.value);
+                    updateSettings({ certDate: e.target.value });
                   }}
                   className="w-full px-4 py-2 rounded-xl border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-700 text-slate-800 dark:text-slate-100 focus:ring-2 focus:ring-[#d19e44] outline-none"
                   placeholder="23 Mei 2026"
@@ -522,9 +574,27 @@ export const Sertifikat = ({ inlineStudentView = false }: { inlineStudentView?: 
           </div>
         )}
 
+        {user?.role !== 'siswa' && (
+          <div className="mb-4 mt-2 relative z-10 px-1">
+            <input 
+              type="text" 
+              placeholder="Cari nama atau username/NIS siswa..." 
+              value={searchTerm}
+              onChange={(e) => {
+                setSearchTerm(e.target.value);
+                setCurrentPage(1);
+              }}
+              className="w-full md:max-w-md px-4 py-2.5 pl-10 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-[#031433] text-slate-800 dark:text-slate-100 focus:ring-2 focus:ring-[#d19e44] outline-none shadow-sm transition-all"
+            />
+            <div className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400">
+              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+            </div>
+          </div>
+        )}
+
         <div className="bg-white dark:bg-[#031433] rounded-2xl shadow-sm border border-slate-100 dark:border-slate-700 overflow-hidden relative z-0">
           <div className="overflow-x-auto pb-2 custom-scrollbar">
-            {studentsWithStatus.length === 0 ? (
+            {filteredStudents.length === 0 ? (
               <div className="text-center py-12 text-slate-400 dark:text-slate-500">
                 <Award className="w-16 h-16 mx-auto mb-4 opacity-50" />
                 <p>Belum ada data siswa.</p>
@@ -574,6 +644,7 @@ export const Sertifikat = ({ inlineStudentView = false }: { inlineStudentView?: 
                               else newNums[s.id] = val;
                               setCustomCertNums(newNums);
                               localStorage.setItem('customCertNums', JSON.stringify(newNums));
+                              updateSettings({ customCertNums: newNums });
                             }}
                             disabled={user?.role === 'siswa'}
                             className="w-full min-w-[120px] px-2 py-1 text-xs border rounded bg-white dark:bg-[#031433] border-slate-200 dark:border-slate-600 dark:text-slate-200 focus:ring-1 focus:ring-[#d19e44] outline-none"
@@ -870,6 +941,7 @@ export const Sertifikat = ({ inlineStudentView = false }: { inlineStudentView?: 
                     setSelectedTemplateId(newId);
                     localStorage.setItem('certTemplates', JSON.stringify(newTemplates));
                     localStorage.setItem('certSelectedTemplateId', newId);
+                    updateSettings({ certTemplates: newTemplates, certSelectedTemplateId: newId });
                     setPendingSave(null);
                  }} 
                  className="px-4 py-2 bg-[#d19e44] hover:bg-[#d19e44] text-white rounded-xl font-bold shadow-sm transition-colors"
