@@ -97,7 +97,7 @@ export const AdminValidasiSertifikat = () => {
     } else {
       setValidationResult({
         valid: false,
-        message: 'Sertifikat tidak terdaftar dalam sistem database kami. Mohon pastikan kembali penulisan nomor sertifikat, NIS, atau nama lengkap siswa.'
+        message: 'Sertifikat tidak terdaftar dalam sistem database kami. Mohon pastikan kembali penulisan nomor sertifikat atau nama lengkap siswa.'
       });
     }
   };
@@ -185,7 +185,7 @@ export const AdminValidasiSertifikat = () => {
             <div className="space-y-6 animate-in slide-in-from-right-4 duration-300">
               <div className="text-center space-y-2">
                 <h3 className="text-xl font-bold text-slate-900 dark:text-slate-100">Cek Keaslian Sertifikat</h3>
-                <p className="text-slate-500 dark:text-slate-400 text-justify md:text-center max-w-sm mx-auto">Masukkan ID Sertifikat, NIS, atau Nama Lengkap siswa untuk memvalidasi data</p>
+                <p className="text-slate-500 dark:text-slate-400 text-justify md:text-center max-w-sm mx-auto">Masukkan ID Sertifikat atau Nama Lengkap siswa untuk memvalidasi data</p>
               </div>
 
               <div className="flex items-center gap-3 relative">
@@ -244,7 +244,7 @@ export const AdminValidasiSertifikat = () => {
                         <ShieldCheck className="w-8 h-8" />
                       </div>
                       <div>
-                        <span className="text-xs font-bold text-teal-600 dark:text-teal-400 uppercase tracking-widest bg-teal-100 dark:bg-teal-900/40 px-3 py-1 rounded-full">Sertifikat Asli & Sah</span>
+                        <span className="inline-block whitespace-nowrap text-xs font-bold text-teal-600 dark:text-teal-400 uppercase tracking-widest bg-teal-100 dark:bg-teal-900/40 px-3 py-1 rounded-full">Sertifikat Asli & Sah</span>
                         <h4 className="text-xl font-extrabold text-slate-800 dark:text-white mt-1.5 font-sans tracking-tight">Sertifikat Terverifikasi</h4>
                       </div>
                     </div>
@@ -259,10 +259,6 @@ export const AdminValidasiSertifikat = () => {
                       <div>
                         <p className="text-xs text-slate-400 dark:text-slate-500 uppercase tracking-wider font-semibold">Nama Lengkap Siswa</p>
                         <p className="text-lg font-bold text-slate-800 dark:text-slate-100 mt-1">{validationResult.studentName}</p>
-                      </div>
-                      <div>
-                        <p className="text-xs text-slate-400 dark:text-slate-500 uppercase tracking-wider font-semibold">Nomor Induk Siswa (NIS)</p>
-                        <p className="text-base font-semibold text-slate-700 dark:text-slate-200 mt-1 font-mono">{validationResult.nis}</p>
                       </div>
                     </div>
                     <div className="space-y-4 font-sans">
