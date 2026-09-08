@@ -34,6 +34,7 @@ export const Sertifikat = ({ inlineStudentView = false }: { inlineStudentView?: 
 
   // Editor states
   const [showEditor, setShowEditor] = useState(false);
+  const [isCreatingNew, setIsCreatingNew] = useState(false);
   const [templates, setTemplates] = useState<{id: string, name: string, elements: CertElement[], bgUrl: string|null, isPortrait: boolean, printBg: boolean}[]>(() => {
     if (settings?.certTemplates && Array.isArray(settings.certTemplates) && settings.certTemplates.length > 0) {
       return settings.certTemplates;
@@ -469,12 +470,26 @@ export const Sertifikat = ({ inlineStudentView = false }: { inlineStudentView?: 
           <div className="bg-white dark:bg-[#031433] p-5 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-700 mb-6 relative z-0">
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 mb-4">
               <h3 className="font-bold text-slate-800 dark:text-white">Pengaturan Sertifikat</h3>
-              <button 
-                onClick={() => setShowEditor(true)}
-                className="flex items-center justify-center bg-indigo-500 hover:bg-indigo-600 text-white py-1.5 px-4 rounded-xl font-bold text-sm transition-all shadow-sm w-full sm:w-auto"
-              >
-                + Tambah / Edit Template
-              </button>
+              <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
+                <button 
+                  onClick={() => {
+                    setIsCreatingNew(true);
+                    setShowEditor(true);
+                  }}
+                  className="flex items-center justify-center bg-teal-500 hover:bg-teal-600 text-white py-1.5 px-4 rounded-xl font-bold text-sm transition-all shadow-sm w-full sm:w-auto"
+                >
+                  + Buat Template Baru
+                </button>
+                <button 
+                  onClick={() => {
+                    setIsCreatingNew(false);
+                    setShowEditor(true);
+                  }}
+                  className="flex items-center justify-center bg-indigo-500 hover:bg-indigo-600 text-white py-1.5 px-4 rounded-xl font-bold text-sm transition-all shadow-sm w-full sm:w-auto"
+                >
+                  Edit Template Aktif
+                </button>
+              </div>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
               <div className="col-span-1 md:col-span-2 xl:col-span-3">
@@ -886,12 +901,12 @@ export const Sertifikat = ({ inlineStudentView = false }: { inlineStudentView?: 
       {showEditor && (
         <CustomTemplateEditor
           onClose={() => setShowEditor(false)}
-          initialElements={customElements}
-          initialBgUrl={customBgUrl}
-          initialIsPortrait={isPortrait}
+          initialElements={isCreatingNew ? DEFAULT_PORTRAIT_ELEMENTS : customElements}
+          initialBgUrl={isCreatingNew ? null : customBgUrl}
+          initialIsPortrait={isCreatingNew ? true : isPortrait}
           onSave={(elements, bgUrl, isPortraitLayout, printBg) => {
             setPendingSave({ elements, bgUrl, isPortrait: isPortraitLayout, printBg });
-            setTemplateNameInput(activeTemplate.name);
+            setTemplateNameInput(isCreatingNew ? 'Template Baru' : activeTemplate.name);
             setShowEditor(false);
           }}
         />
