@@ -128,6 +128,9 @@ export function getKriteriaNilai(juz: number, surahName?: string) {
 export function calculatePredikatAkhir(juz: number, setoranList: any[]) {
   if (!setoranList || setoranList.length === 0) return '-';
 
+  const progress = getJuzProgress(juz, setoranList);
+  if (progress.covered < progress.total) return '-';
+
   const getSalah = (list: any[]) => {
     let salahCount = 0;
     for (const s of list) {

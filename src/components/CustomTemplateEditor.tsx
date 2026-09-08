@@ -483,7 +483,6 @@ export const CustomTemplateEditor: React.FC<CustomTemplateEditorProps> = ({ onCl
                     ...position,
                   });
                 }}
-                bounds="parent"
                 onClick={(e: any) => { e.stopPropagation(); setSelectedId(el.id); }}
                 onDoubleClick={(e: any) => {
                   e.stopPropagation();
