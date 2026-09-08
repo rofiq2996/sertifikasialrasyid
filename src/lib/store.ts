@@ -216,6 +216,7 @@ class AppState {
     try {
       await setDoc(doc(db, 'settings', 'general'), this.settings);
     } catch (e) {
+      console.error("Error saving settings to firestore:", e);
       localStorage.setItem('batasAkhirSetoran', this.settings.batasAkhirSetoran || '');
     }
   }
