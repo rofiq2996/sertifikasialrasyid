@@ -349,21 +349,17 @@ export const Sertifikat = ({ inlineStudentView = false }: { inlineStudentView?: 
   return (
     <div className="space-y-6 relative overflow-hidden">
       {inlineStudentView && user?.role === 'siswa' ? (
-        <div className="bg-gradient-to-br from-[#d19e44] via-teal-600 to-emerald-700 rounded-3xl p-6 md:p-8 text-white shadow-xl relative overflow-hidden flex flex-col lg:flex-row items-center justify-between gap-6">
-          {/* Ambient Glows */}
-          <div className="absolute -right-10 -top-10 w-40 h-40 bg-white/10 rounded-full blur-3xl pointer-events-none"></div>
-          <div className="absolute -left-10 -bottom-10 w-40 h-40 bg-teal-500/20 rounded-full blur-3xl pointer-events-none"></div>
-
+        <div className="bg-teal-700 dark:bg-teal-900 rounded-3xl p-6 md:p-8 text-white shadow-xl relative overflow-hidden flex flex-col lg:flex-row items-center justify-between gap-6 border border-teal-600 dark:border-teal-800">
           <div className="flex flex-col sm:flex-row items-center sm:items-start gap-5 relative z-10 text-center sm:text-left">
             <div className="w-14 h-14 bg-white/10 rounded-2xl flex items-center justify-center shrink-0 border border-white/20 shadow-inner">
-              <Award className="w-8 h-8 text-[#d19e44]/70 animate-bounce" />
+              <Award className="w-8 h-8 text-teal-300" />
             </div>
             <div className="space-y-1">
-              <h3 className="font-extrabold text-xl md:text-2xl tracking-tight">🎉 Baarakallahu Fiikum, Selamat!</h3>
-              <p className="text-emerald-50 text-sm md:text-base opacity-95 leading-relaxed font-semibold">
+              <h3 className="font-extrabold text-xl md:text-2xl tracking-tight text-white">🎉 Baarakallahu Fiikum, Selamat!</h3>
+              <p className="text-teal-50 text-sm md:text-base opacity-95 leading-relaxed font-semibold">
                 Selamat! Anda telah menyelesaikan setoran hafalan target juz dengan tuntas.
               </p>
-              <p className="text-[#d19e44]/80 text-xs font-medium">
+              <p className="text-teal-200/80 text-xs font-medium">
                 Sertifikat kelulusan resmi Anda sudah siap dipratinjau dan diunduh. Silakan gunakan tombol aksi di sebelah kanan.
               </p>
             </div>
@@ -395,24 +391,24 @@ export const Sertifikat = ({ inlineStudentView = false }: { inlineStudentView?: 
                   {isPreviewing === user.id ? (
                     <Loader2 className="w-4 h-4 animate-spin" />
                   ) : (
-                    <Eye className="w-4 h-4 text-[#d19e44]/70" />
+                    <Eye className="w-4 h-4 text-teal-200" />
                   )}
                   <span>Preview</span>
                 </button>
                 <button 
                   onClick={() => handleDownload(user.id, siswa.find(s=>s.id===user.id)?.nama || 'Siswa', 'pdf')}
-                  className="w-full sm:w-auto bg-white hover:bg-slate-50 active:scale-95 text-emerald-700 font-extrabold text-xs md:text-sm px-5 py-2.5 rounded-2xl transition-all flex items-center justify-center gap-2 shadow-sm disabled:opacity-50"
+                  className="w-full sm:w-auto bg-white hover:bg-slate-50 active:scale-95 text-teal-700 font-extrabold text-xs md:text-sm px-5 py-2.5 rounded-2xl transition-all flex items-center justify-center gap-2 shadow-sm disabled:opacity-50"
                   disabled={!!isPreviewing || isDownloading}
                 >
-                  <FileText className="w-4 h-4 text-red-500 animate-pulse" />
+                  <FileText className="w-4 h-4 text-red-500" />
                   <span>Format PDF</span>
                 </button>
                 <button 
                   onClick={() => handleDownload(user.id, siswa.find(s=>s.id===user.id)?.nama || 'Siswa', 'jpg')}
-                  className="w-full sm:w-auto bg-white hover:bg-slate-50 active:scale-95 text-emerald-700 font-extrabold text-xs md:text-sm px-5 py-2.5 rounded-2xl transition-all flex items-center justify-center gap-2 shadow-sm disabled:opacity-50"
+                  className="w-full sm:w-auto bg-white hover:bg-slate-50 active:scale-95 text-teal-700 font-extrabold text-xs md:text-sm px-5 py-2.5 rounded-2xl transition-all flex items-center justify-center gap-2 shadow-sm disabled:opacity-50"
                   disabled={!!isPreviewing || isDownloading}
                 >
-                  <FileImage className="w-4 h-4 text-[#d19e44]" />
+                  <FileImage className="w-4 h-4 text-amber-500" />
                   <span>Format JPG</span>
                 </button>
               </div>
