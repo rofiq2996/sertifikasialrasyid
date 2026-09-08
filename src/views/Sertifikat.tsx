@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { useAppContext } from '../lib/AppContext';
 import { JUZ_SURAH_MAP, calculatePredikatAkhir, formatPredikatCert } from '../lib/constants';
-import { Award, Download, Users, Loader2, ChevronLeft, ChevronRight, FileImage, FileText, Eye, X, Settings } from 'lucide-react';
+import { Award, Download, Users, Loader2, ChevronLeft, ChevronRight, FileImage, FileText, Eye, X, Settings, CheckCircle } from 'lucide-react';
 import { Siswa, Setoran } from '../types';
 import * as htmlToImage from 'html-to-image';
 import jsPDF from 'jspdf';
@@ -83,6 +83,7 @@ export const Sertifikat = ({ inlineStudentView = false }: { inlineStudentView?: 
 
   const [pendingSave, setPendingSave] = useState<{ elements: CertElement[], bgUrl: string|null, isPortrait: boolean, printBg: boolean } | null>(null);
   const [templateNameInput, setTemplateNameInput] = useState('');
+  const [showSuccessToast, setShowSuccessToast] = useState(false);
 
   const activeTemplate = templates.find(t => t.id === selectedTemplateId) || templates[0];
   const customElements = activeTemplate.elements;
@@ -954,12 +955,24 @@ export const Sertifikat = ({ inlineStudentView = false }: { inlineStudentView?: 
                     localStorage.setItem('certSelectedTemplateId', newId);
                     updateSettings({ certTemplates: newTemplates, certSelectedTemplateId: newId });
                     setPendingSave(null);
+                    setShowSuccessToast(true);
+                    setTimeout(() => setShowSuccessToast(false), 3000);
                  }} 
                  className="px-4 py-2 bg-[#d19e44] hover:bg-[#d19e44] text-white rounded-xl font-bold shadow-sm transition-colors"
                >
                  Simpan Template
                </button>
              </div>
+          </div>
+        </div>
+      )}
+
+      {/* Success Toast Notification */}
+      {showSuccessToast && (
+        <div className="fixed bottom-6 right-6 z-[200] animate-in slide-in-from-bottom-5 fade-in duration-300">
+          <div className="bg-emerald-500 text-white px-5 py-3 rounded-2xl shadow-lg flex items-center space-x-3">
+            <CheckCircle className="w-5 h-5 text-white" />
+            <p className="font-semibold text-sm">Template berhasil dibuat dan disimpan!</p>
           </div>
         </div>
       )}
