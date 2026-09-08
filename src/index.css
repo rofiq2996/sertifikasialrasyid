@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&family=Amiri+Quran&family=Fredoka:wght@400;500;600;700&family=League+Spartan:wght@400;500;600;700&family=Glacial+Indifference:wght@400;700&family=Tropika+Script&family=Garet:wght@400;500;600;700&family=Marykate&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&family=Amiri+Quran&family=Fredoka:wght@400;500;600;700&family=League+Spartan:wght@400;500;600;700&family=Jost:wght@400;500;600;700&family=Comfortaa:wght@400;500;600;700&family=Permanent+Marker&family=Cookie&display=swap');
 @import "tailwindcss";
 @custom-variant dark (&:where(.dark, .dark *));
 

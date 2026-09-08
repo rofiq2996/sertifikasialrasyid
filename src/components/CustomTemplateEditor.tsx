@@ -347,10 +347,10 @@ export const CustomTemplateEditor: React.FC<CustomTemplateEditorProps> = ({ onCl
                           <option value="'Satisfy', cursive font-sans font-medium">Satisfy</option>
                           <option value="'Sacramento', cursive font-sans font-medium font-bold">Sacramento</option>
                           <option value="'Indie Flower', cursive font-sans font-medium">Indie Flower</option>
-                          <option value="'Tropika Script', cursive">Tropika Script</option>
-                          <option value="'Marykate', cursive">Marykate</option>
-                          <option value="'Glacial Indifference', sans-serif">Glacial Indifference</option>
-                          <option value="'Garet', sans-serif">Garet</option>
+                          <option value="'Tropika Script', 'Cookie', cursive">Tropika Script</option>
+                          <option value="'Marykate', 'Permanent Marker', cursive">Marykate</option>
+                          <option value="'Glacial Indifference', 'Jost', sans-serif">Glacial Indifference</option>
+                          <option value="'Garet', 'Comfortaa', sans-serif">Garet</option>
                         </optgroup>
                         <optgroup label="Desain & Dekoratif">
                           <option value="'Space Grotesk', sans-serif">Space Grotesk</option>
