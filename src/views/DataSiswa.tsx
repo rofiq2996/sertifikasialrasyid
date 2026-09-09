@@ -20,6 +20,10 @@ export const DataSiswa = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingSiswa, setEditingSiswa] = useState<Siswa | null>(null);
 
+  // Download Filter Modal state
+  const [isDownloadModalOpen, setIsDownloadModalOpen] = useState(false);
+  const [downloadPengujiId, setDownloadPengujiId] = useState<string>('all');
+
   // Statistik Modal state
   const [isStatistikOpen, setIsStatistikOpen] = useState(false);
   const [statistikSiswa, setStatistikSiswa] = useState<Siswa | null>(null);
@@ -43,7 +47,6 @@ export const DataSiswa = () => {
 
   const filteredSiswa = siswa.filter(s => {
     if (user?.role === 'guru' && s.penguji_id !== user.id) return false;
-    
     if (showDuplicates && !duplicateNames.has(s.nama.trim().toLowerCase())) return false;
 
     if (search && !s.nama.toLowerCase().includes(search.toLowerCase()) && !((s.username || s.nis || '').toLowerCase().includes(search.toLowerCase()))) return false;
@@ -128,9 +131,26 @@ export const DataSiswa = () => {
   };
 
   const handleExportUserPDF = () => {
-    // If Admin, export all siswa. If Guru, export only their binaan (filteredSiswa without search text)
-    const siswaToExport = isAdmin ? siswa : filteredSiswa.length > 0 ? filteredSiswa : siswa.filter(s => s.penguji_id === user?.id);
-    exportUserToPDF(siswaToExport, penguji);
+    // If Admin, export all siswa or filtered by penguji. If Guru, export only their binaan
+    let siswaToExport = siswa;
+    let filename = 'Data_Semua_Peserta.pdf';
+
+    if (isAdmin && downloadPengujiId !== 'all') {
+      siswaToExport = siswa.filter(s => s.penguji_id === downloadPengujiId);
+      const selectedPenguji = penguji.find(p => p.id === downloadPengujiId);
+      if (selectedPenguji) {
+        filename = `Data_${selectedPenguji.nama.replace(/\s+/g, '_')}.pdf`;
+      }
+    } else if (user?.role === 'guru') {
+      siswaToExport = siswa.filter(s => s.penguji_id === user?.id);
+      const selectedPenguji = penguji.find(p => p.id === user?.id);
+      if (selectedPenguji) {
+        filename = `Data_${selectedPenguji.nama.replace(/\s+/g, '_')}.pdf`;
+      }
+    }
+    
+    exportUserToPDF(siswaToExport, penguji, filename);
+    setIsDownloadModalOpen(false);
   };
 
   const generateUsername = (nama: string, existingUsernames: Set<string>) => {
@@ -251,15 +271,17 @@ export const DataSiswa = () => {
   return (
     <div className="space-y-4 fade-in">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-3">
-        <div className="relative w-full md:w-72">
-          <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 w-4 h-4 text-slate-400" />
-          <input 
-            type="text" 
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Cari siswa (Nama/NIS)..." 
-            className="w-full pl-10 pr-4 py-3 md:py-2.5 text-base md:text-sm rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-[#031433] text-slate-800 dark:text-white focus:ring-2 focus:ring-[#d19e44] outline-none"
-          />
+        <div className="flex flex-col md:flex-row gap-3 w-full md:w-auto">
+          <div className="relative w-full md:w-72">
+            <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 w-4 h-4 text-slate-400" />
+            <input 
+              type="text" 
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Cari siswa (Nama/NIS)..." 
+              className="w-full pl-10 pr-4 py-3 md:py-2.5 text-base md:text-sm rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-[#031433] text-slate-800 dark:text-white focus:ring-2 focus:ring-[#d19e44] outline-none"
+            />
+          </div>
         </div>
         
         <div className="grid grid-cols-2 md:flex gap-2 w-full md:w-auto flex-wrap">
@@ -268,7 +290,7 @@ export const DataSiswa = () => {
               <button onClick={() => setShowDuplicates(!showDuplicates)} className={`flex items-center justify-center space-x-2 ${showDuplicates ? 'bg-orange-500 text-white border-orange-600 hover:bg-orange-600 dark:bg-orange-600 dark:border-orange-700 dark:text-white dark:hover:bg-orange-700' : 'bg-orange-50 text-orange-700 border-orange-100 hover:bg-orange-100 dark:bg-orange-900/30 dark:border-orange-800/50 dark:text-orange-400'} py-3 md:py-2 md:px-4 rounded-xl text-sm font-semibold transition-all border active:scale-[0.98] tap-bounce`} title="Filter Data Dobel">
                 <Filter className="w-4 h-4" /> <span>{showDuplicates ? 'Semua' : 'Dobel'}</span>
               </button>
-              <button onClick={handleExportUserPDF} className="flex items-center justify-center space-x-2 bg-red-50 text-red-700 hover:bg-red-100 active:scale-[0.98] dark:bg-red-900/30 dark:text-red-400 py-3 md:py-2 md:px-4 rounded-xl text-sm font-semibold transition-all border border-red-100 dark:border-red-800/50 tap-bounce" title="Download Data User PDF">
+              <button onClick={() => isAdmin ? setIsDownloadModalOpen(true) : handleExportUserPDF()} className="flex items-center justify-center space-x-2 bg-red-50 text-red-700 hover:bg-red-100 active:scale-[0.98] dark:bg-red-900/30 dark:text-red-400 py-3 md:py-2 md:px-4 rounded-xl text-sm font-semibold transition-all border border-red-100 dark:border-red-800/50 tap-bounce" title="Download Data User PDF">
                 <DownloadCloud className="w-4 h-4" /> <span>User</span>
               </button>
             </>
@@ -377,6 +399,50 @@ export const DataSiswa = () => {
         onClose={() => setIsStatistikOpen(false)}
         siswa={statistikSiswa}
       />
+
+      {/* Download Filter Modal */}
+      {isDownloadModalOpen && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-[#041e49]/50 backdrop-blur-sm px-4">
+          <div className="bg-white dark:bg-[#031433] p-6 rounded-3xl shadow-xl w-full max-w-sm border border-slate-100 dark:border-slate-800 animate-in fade-in zoom-in duration-200">
+            <h3 className="text-xl font-bold mb-2 text-slate-800 dark:text-white">Download Data User</h3>
+            <p className="text-sm text-slate-500 dark:text-slate-400 mb-6">Pilih penguji untuk memfilter data siswa yang akan didownload.</p>
+            
+            <div className="mb-6">
+              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">Filter Penguji</label>
+              <div className="relative">
+                <select
+                  value={downloadPengujiId}
+                  onChange={(e) => setDownloadPengujiId(e.target.value)}
+                  className="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-[#041e49] text-slate-800 dark:text-slate-100 focus:ring-2 focus:ring-red-500 outline-none appearance-none pr-10"
+                >
+                  <option value="all">Semua Penguji</option>
+                  {penguji.map(p => (
+                    <option key={p.id} value={p.id}>{p.nama}</option>
+                  ))}
+                </select>
+                <div className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none">
+                  <Filter className="w-4 h-4" />
+                </div>
+              </div>
+            </div>
+
+            <div className="flex justify-end space-x-3">
+              <button 
+                onClick={() => setIsDownloadModalOpen(false)}
+                className="px-5 py-2.5 rounded-xl text-slate-600 dark:text-slate-300 font-semibold hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+              >
+                Batal
+              </button>
+              <button 
+                onClick={handleExportUserPDF}
+                className="px-5 py-2.5 bg-red-600 hover:bg-red-700 text-white rounded-xl font-bold shadow-sm transition-colors flex items-center space-x-2"
+              >
+                <DownloadCloud className="w-4 h-4" /> <span>Download</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

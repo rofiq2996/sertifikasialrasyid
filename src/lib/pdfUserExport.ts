@@ -19,7 +19,7 @@ const fetchLogoBase64 = async (): Promise<string | null> => {
   return null;
 };
 
-export const exportUserToPDF = async (siswaList: Siswa[], pengujiList: Penguji[]) => {
+export const exportUserToPDF = async (siswaList: Siswa[], pengujiList: Penguji[], filename: string = 'Data_User_Peserta_Sertifikasi.pdf') => {
   if (siswaList.length === 0) {
     alert("Tidak ada data untuk diekspor");
     return;
@@ -156,5 +156,5 @@ export const exportUserToPDF = async (siswaList: Siswa[], pengujiList: Penguji[]
     }
   }
 
-  doc.save(`Data_User_Peserta_Sertifikasi.pdf`);
+  doc.save(filename);
 };

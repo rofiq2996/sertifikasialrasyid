@@ -21,7 +21,7 @@ const DEFAULT_PORTRAIT_ELEMENTS: CertElement[] = [
 ];
 
 export const Sertifikat = ({ inlineStudentView = false }: { inlineStudentView?: boolean }) => {
-  const { user, siswa, setoran, settings, updateSettings } = useAppContext();
+  const { user, penguji, siswa, setoran, settings, updateSettings } = useAppContext();
   const [isDownloading, setIsDownloading] = useState(false);
   const [isPreviewing, setIsPreviewing] = useState<string | null>(null);
   const [previewData, setPreviewData] = useState<{ id: string, name: string, dataUrl: string } | null>(null);
@@ -110,6 +110,7 @@ export const Sertifikat = ({ inlineStudentView = false }: { inlineStudentView?: 
   });
 
   const [searchTerm, setSearchTerm] = useState('');
+  const [filterPengujiId, setFilterPengujiId] = useState<string>('all');
   const itemsPerPage = 5;
 
   const getTuntasJuz = (s: Siswa, allSetoran: Setoran[]) => {
@@ -136,7 +137,12 @@ export const Sertifikat = ({ inlineStudentView = false }: { inlineStudentView?: 
   };
 
   const studentsWithStatus = useMemo(() => {
-    const listToProcess = user?.role === 'siswa' ? siswa.filter(s => s.id === user?.id) : siswa;
+    let listToProcess = user?.role === 'siswa' ? siswa.filter(s => s.id === user?.id) : siswa;
+    
+    if (user?.role === 'admin' && filterPengujiId !== 'all') {
+      listToProcess = listToProcess.filter(s => s.penguji_id === filterPengujiId);
+    }
+    
     return listToProcess.map(s => {
       const tuntasJuz = getTuntasJuz(s, setoran);
       let predikat = '-';
@@ -153,7 +159,7 @@ export const Sertifikat = ({ inlineStudentView = false }: { inlineStudentView?: 
         predikat
       };
     });
-  }, [siswa, setoran]);
+  }, [siswa, setoran, user, filterPengujiId]);
 
   const eligibleStudents = useMemo(() => {
     return studentsWithStatus.filter(s => s.tuntasJuz.length > 0);
@@ -584,20 +590,38 @@ export const Sertifikat = ({ inlineStudentView = false }: { inlineStudentView?: 
         )}
 
         {user?.role !== 'siswa' && (
-          <div className="mb-4 mt-2 relative z-10 px-1">
-            <input 
-              type="text" 
-              placeholder="Cari nama atau username/NIS siswa..." 
-              value={searchTerm}
-              onChange={(e) => {
-                setSearchTerm(e.target.value);
-                setCurrentPage(1);
-              }}
-              className="w-full md:max-w-md px-4 py-2.5 pl-10 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-[#031433] text-slate-800 dark:text-slate-100 focus:ring-2 focus:ring-[#d19e44] outline-none shadow-sm transition-all"
-            />
-            <div className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400">
-              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+          <div className="mb-4 mt-2 relative z-10 px-1 flex flex-col md:flex-row gap-3">
+            <div className="relative flex-1 md:max-w-md">
+              <input 
+                type="text" 
+                placeholder="Cari nama atau username/NIS siswa..." 
+                value={searchTerm}
+                onChange={(e) => {
+                  setSearchTerm(e.target.value);
+                  setCurrentPage(1);
+                }}
+                className="w-full px-4 py-2.5 pl-10 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-[#031433] text-slate-800 dark:text-slate-100 focus:ring-2 focus:ring-[#d19e44] outline-none shadow-sm transition-all"
+              />
+              <div className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400">
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+              </div>
             </div>
+
+            {user?.role === 'admin' && (
+              <select
+                value={filterPengujiId}
+                onChange={(e) => {
+                  setFilterPengujiId(e.target.value);
+                  setCurrentPage(1);
+                }}
+                className="w-full md:w-auto px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-[#031433] text-slate-800 dark:text-slate-100 focus:ring-2 focus:ring-[#d19e44] outline-none shadow-sm transition-all appearance-none"
+              >
+                <option value="all">Semua Penguji</option>
+                {penguji.map(p => (
+                  <option key={p.id} value={p.id}>{p.nama}</option>
+                ))}
+              </select>
+            )}
           </div>
         )}
 
