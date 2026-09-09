@@ -12,10 +12,11 @@ export const SiswaSertifikat = () => {
   // Calculate completed Juz
   const tuntasJuz = useMemo(() => {
     if (!currentSiswa) return [];
+    
     if (currentSiswa.nama.toLowerCase() === 'abdullah azzam') {
       return [...currentSiswa.target];
     }
-
+    
     const tuntas: number[] = [];
     for (const juz of currentSiswa.target) {
       const requiredSurahs = JUZ_SURAH_MAP[juz] || [];
@@ -58,21 +59,14 @@ export const SiswaSertifikat = () => {
       </div>
 
       {/* Grid Layout: Status Overview */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 px-2">
+      <div className="grid grid-cols-2 md:grid-cols-3 gap-3 px-2">
         <div className="bg-white dark:bg-[#031433] py-3 px-4 rounded-2xl border border-slate-100 dark:border-slate-800 text-center shadow-sm">
           <span className="text-[10px] text-slate-400 font-bold tracking-wide uppercase">Nama</span>
           <span className="text-sm font-bold text-slate-800 dark:text-slate-100 mt-0.5 block truncate px-2" title={currentSiswa.nama}>
             {currentSiswa.nama}
           </span>
         </div>
-
-        <div className="bg-white dark:bg-[#031433] py-3 px-4 rounded-2xl border border-slate-100 dark:border-slate-800 text-center shadow-sm">
-          <span className="text-[10px] text-slate-400 font-bold tracking-wide uppercase">Target</span>
-          <span className="text-sm font-bold text-slate-800 dark:text-slate-100 mt-0.5 block">
-            Juz {currentSiswa.target.join(', ')}
-          </span>
-        </div>
-
+        
         <div className="bg-white dark:bg-[#031433] py-3 px-4 rounded-2xl border border-[#d19e44]/20 dark:border-[#d19e44]/20 text-center shadow-sm relative overflow-hidden">
           <div className="absolute inset-0 bg-gradient-to-br from-[#d19e44]/5 to-transparent"></div>
           <span className="text-[10px] text-[#d19e44] font-bold tracking-wide uppercase relative z-10">Tuntas</span>
@@ -80,10 +74,15 @@ export const SiswaSertifikat = () => {
             {tuntasJuz.length > 0 ? `Juz ${tuntasJuz.join(', ')}` : '-'}
           </span>
         </div>
-
-        <div className="bg-white dark:bg-[#031433] py-3 px-4 rounded-2xl border border-slate-100 dark:border-slate-800 text-center shadow-sm">
+        
+        <div className="col-span-2 md:col-span-1 bg-white dark:bg-[#031433] py-4 md:py-3 px-4 rounded-2xl border border-slate-100 dark:border-slate-800 text-center shadow-sm flex flex-col justify-center">
           <span className="text-[10px] text-slate-400 font-bold tracking-wide uppercase">Predikat</span>
-          <span className="text-sm font-bold text-slate-800 dark:text-slate-100 mt-0.5 block">
+          <span className={`text-lg md:text-sm font-black mt-1 md:mt-0.5 block ${
+            predikat === 'MUMTAZ' ? 'text-[#d19e44] dark:text-[#d19e44]' : 
+            predikat === 'JAYYID JIDDAN' ? 'text-emerald-600 dark:text-emerald-400' : 
+            predikat === 'JAYYID' ? 'text-blue-600 dark:text-blue-400' : 
+            'text-slate-800 dark:text-slate-100'
+          }`}>
             {predikat}
           </span>
         </div>
