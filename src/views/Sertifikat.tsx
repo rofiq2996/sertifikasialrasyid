@@ -64,6 +64,9 @@ export const Sertifikat = ({ inlineStudentView = false }: { inlineStudentView?: 
   });
 
   const [selectedTemplateId, setSelectedTemplateId] = useState<string>(() => {
+    if (user?.role === 'siswa') {
+      return settings?.certSelectedTemplateId || 'default';
+    }
     return settings?.certSelectedTemplateId || localStorage.getItem('certSelectedTemplateId') || 'default';
   });
 
@@ -73,6 +76,8 @@ export const Sertifikat = ({ inlineStudentView = false }: { inlineStudentView?: 
       if (settings.certSelectedTemplateId) {
         setSelectedTemplateId(settings.certSelectedTemplateId);
       }
+    } else if (settings?.certSelectedTemplateId) {
+      setSelectedTemplateId(settings.certSelectedTemplateId);
     }
     if (settings?.certNumFormat) setCertNumFormat(settings.certNumFormat);
     if (settings?.certStartNum) setCertStartNum(settings.certStartNum);
@@ -85,7 +90,15 @@ export const Sertifikat = ({ inlineStudentView = false }: { inlineStudentView?: 
   const [templateNameInput, setTemplateNameInput] = useState('');
   const [showSuccessToast, setShowSuccessToast] = useState(false);
 
-  const activeTemplate = templates.find(t => t.id === selectedTemplateId) || templates[0];
+  // For students, always strictly follow the template configured by admin in settings
+  const isStudent = user?.role === 'siswa';
+  const effectiveTemplateId = isStudent
+    ? (settings?.certSelectedTemplateId || templates[0]?.id || 'default')
+    : (selectedTemplateId || settings?.certSelectedTemplateId || templates[0]?.id || 'default');
+
+  const activeTemplate = templates.find(t => t.id === effectiveTemplateId) 
+    || (settings?.certSelectedTemplateId ? templates.find(t => t.id === settings.certSelectedTemplateId) : null)
+    || templates[0];
   const customElements = activeTemplate.elements;
   const customBgUrl = activeTemplate.bgUrl;
   const isPortrait = activeTemplate.isPortrait;
@@ -367,22 +380,6 @@ export const Sertifikat = ({ inlineStudentView = false }: { inlineStudentView?: 
           </div>
           {eligibleStudents.length > 0 && user && (
             <div className="flex flex-col items-end gap-3 w-full lg:w-auto shrink-0 relative z-10">
-              {templates.length > 1 && (
-                <div className="w-full sm:w-auto flex items-center justify-end">
-                  <select
-                    value={selectedTemplateId}
-                    onChange={(e) => {
-                      setSelectedTemplateId(e.target.value);
-                      localStorage.setItem('certSelectedTemplateId', e.target.value);
-                    }}
-                    className="px-3 py-1.5 rounded-xl bg-white/20 text-white border border-white/30 outline-none focus:ring-2 focus:ring-white/50 backdrop-blur-md text-sm cursor-pointer shadow-sm w-full"
-                  >
-                    {templates.map(t => (
-                      <option key={t.id} value={t.id} className="text-slate-800 bg-white">{t.name}</option>
-                    ))}
-                  </select>
-                </div>
-              )}
               <div className="flex flex-col sm:flex-row items-center gap-3 w-full">
                 <button 
                   onClick={() => handlePreview(user.id, siswa.find(s=>s.id===user.id)?.nama || 'Siswa')}
