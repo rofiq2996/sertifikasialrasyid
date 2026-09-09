@@ -60,9 +60,9 @@ export const SiswaSertifikat = () => {
       {/* Grid Layout: Status Overview */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3 px-2">
         <div className="bg-white dark:bg-[#031433] py-3 px-4 rounded-2xl border border-slate-100 dark:border-slate-800 text-center shadow-sm">
-          <span className="text-[10px] text-slate-400 font-bold tracking-wide uppercase">NIS</span>
-          <span className="text-sm font-bold text-slate-800 dark:text-slate-100 mt-0.5 block">
-            {currentSiswa.nis || '-'}
+          <span className="text-[10px] text-slate-400 font-bold tracking-wide uppercase">Nama</span>
+          <span className="text-sm font-bold text-slate-800 dark:text-slate-100 mt-0.5 block truncate px-2" title={currentSiswa.nama}>
+            {currentSiswa.nama}
           </span>
         </div>
 
