@@ -16,6 +16,11 @@ export const Login = () => {
       return;
     }
 
+    if (username === 'kepsek' && password === '123') {
+      setUser({ id: 'kepsek', role: 'kepsek', nama: 'Kepala Sekolah' });
+      return;
+    }
+
     const guru = penguji.find(p => p.username === username && p.password === password);
     if (guru) {
       setUser({ id: guru.id, role: 'guru', nama: guru.nama, foto: guru.foto });

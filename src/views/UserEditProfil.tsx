@@ -178,7 +178,7 @@ export const UserEditProfil = () => {
           </div>
         </div>
         
-        <h2 className="text-2xl font-extrabold tracking-wide mb-1.5 relative z-10">{formData.nama || 'Admiusernametrator'}</h2>
+        <h2 className="text-2xl font-extrabold tracking-wide mb-1.5 relative z-10">{formData.nama || (user.role === 'kepsek' ? 'Kepala Sekolah' : 'Administrator')}</h2>
         
         <div className="flex flex-col items-center gap-1.5 z-10">
            {user.role === 'siswa' && currentSiswa && (
@@ -198,7 +198,12 @@ export const UserEditProfil = () => {
            )}
            {user.role === 'admin' && (
              <span className="text-slate-300 text-sm font-medium tracking-wide uppercase bg-[#031433]/50 px-3 py-1 rounded-full">
-                 Admiusernametrator
+                 Administrator
+             </span>
+           )}
+           {user.role === 'kepsek' && (
+             <span className="text-slate-300 text-sm font-medium tracking-wide uppercase bg-[#031433]/50 px-3 py-1 rounded-full">
+                 Kepala Sekolah
              </span>
            )}
         </div>
@@ -359,7 +364,7 @@ export const UserEditProfil = () => {
                   </form>
                 ) : (
                   <div className="py-8 text-center text-slate-500 dark:text-slate-400 text-sm font-medium border border-dashed border-slate-200 dark:border-slate-700 rounded-3xl bg-slate-50 dark:bg-[#041e49]/50">
-                      Informasi profil Admiusernametrator hanya dapat diubah melalui sistem core.
+                      Informasi profil Administrator hanya dapat diubah melalui sistem core.
                   </div>
                 )}
               </div>
@@ -415,7 +420,7 @@ export const UserEditProfil = () => {
                   </form>
                 ) : (
                   <div className="py-8 text-center text-slate-500 dark:text-slate-400 text-sm font-medium border border-dashed border-slate-200 dark:border-slate-700 rounded-3xl bg-slate-50 dark:bg-[#041e49]/50">
-                      Sandi Admiusernametrator hanya dapat diubah melalui sistem core.
+                      Sandi Administrator hanya dapat diubah melalui sistem core.
                   </div>
                 )}
               </div>

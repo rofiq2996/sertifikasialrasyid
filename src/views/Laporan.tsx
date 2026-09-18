@@ -8,7 +8,7 @@ import { CustomSelect } from '../components/CustomSelect';
 import Swal from 'sweetalert2';
 
 export const Laporan = () => {
-  const { setoran, siswa, penguji, clearAllSetoran } = useAppContext();
+  const { user, setoran, siswa, penguji, clearAllSetoran } = useAppContext();
   const [exportFormat, setExportFormat] = useState('semua_nilai');
   const [search, setSearch] = useState('');
   
@@ -110,13 +110,15 @@ export const Laporan = () => {
           >
             <Download className="w-4 h-4" /> <span>Export Excel</span>
           </button>
-          <button 
-            onClick={handleClearAll}
-            disabled={setoran.length === 0}
-            className="w-full md:w-auto flex items-center justify-center space-x-2 bg-red-100/50 text-red-600 hover:bg-red-100 dark:bg-red-900/20 dark:text-red-400 dark:hover:bg-red-900/40 py-3 md:py-2 px-4 rounded-xl text-sm font-bold transition-all disabled:opacity-50 disabled:cursor-not-allowed border border-red-200/50 dark:border-red-900/50"
-          >
-            <Trash2 className="w-4 h-4" /> <span>Bersihkan Semua</span>
-          </button>
+          {user?.role !== 'kepsek' && (
+            <button 
+              onClick={handleClearAll}
+              disabled={setoran.length === 0}
+              className="w-full md:w-auto flex items-center justify-center space-x-2 bg-red-100/50 text-red-600 hover:bg-red-100 dark:bg-red-900/20 dark:text-red-400 dark:hover:bg-red-900/40 py-3 md:py-2 px-4 rounded-xl text-sm font-bold transition-all disabled:opacity-50 disabled:cursor-not-allowed border border-red-200/50 dark:border-red-900/50"
+            >
+              <Trash2 className="w-4 h-4" /> <span>Bersihkan Semua</span>
+            </button>
+          )}
         </div>
       </div>
 

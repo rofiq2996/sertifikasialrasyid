@@ -24,6 +24,7 @@ import {
   UserCheck,
 } from "lucide-react";
 import { AdminDashboard } from "../views/AdminDashboard";
+import { KepsekPantauPenguji } from "../views/KepsekPantauPenguji";
 import { DataSiswa } from "../views/DataSiswa";
 import { DataPenguji } from "../views/DataPenguji";
 import { Laporan } from "../views/Laporan";
@@ -51,7 +52,7 @@ import Swal from "sweetalert2";
 export const MainLayout = () => {
   const { user, theme, toggleTheme, setUser, siswa, setoran } = useAppContext();
   
-  const initialMenu = user?.role === "admin" ? "dashboard" : user?.role === "guru" ? "dashboard" : "profil";
+  const initialMenu = user?.role === "admin" || user?.role === "kepsek" || user?.role === "guru" ? "dashboard" : "profil";
   const [activeMenu, _setActiveMenu] = useState(initialMenu);
 
   const activeMenuRef = React.useRef(activeMenu);
@@ -339,11 +340,45 @@ export const MainLayout = () => {
     },
   ];
 
+  const kepsekMenu = [
+    {
+      id: "dashboard",
+      label: "Home",
+      icon: Home,
+      color: "text-blue-500 dark:text-blue-400",
+    },
+    {
+      id: "pantau",
+      label: "Pantau",
+      icon: Users,
+      color: "text-purple-500 dark:text-purple-400",
+    },
+    {
+      id: "laporan",
+      label: "Laporan",
+      icon: BarChart3,
+      color: "text-[#d19e44] dark:text-[#d19e44]",
+    },
+    {
+      id: "edit_profil",
+      label: "Profil",
+      icon: User,
+      color: "text-slate-500 dark:text-slate-400",
+    },
+  ];
+
   const adminMobileMenu = [
     { id: "dashboard", label: "Home", icon: Home, color: "text-blue-500" },
     { id: "validasi", label: "Validasi", icon: QrCode, color: "text-teal-500" },
     { id: "sertifikat", label: "Sertifikat", icon: Award, color: "text-indigo-500" },
     { id: "edit_profil", label: "Profil", icon: User, color: "text-purple-500" },
+  ];
+
+  const kepsekMobileMenu = [
+    { id: "dashboard", label: "Home", icon: Home, color: "text-blue-500" },
+    { id: "pantau", label: "Pantau", icon: Users, color: "text-purple-500" },
+    { id: "laporan", label: "Laporan", icon: BarChart3, color: "text-[#d19e44]" },
+    { id: "edit_profil", label: "Profil", icon: User, color: "text-slate-500" },
   ];
 
   const guruMobileMenu = [
@@ -361,6 +396,8 @@ export const MainLayout = () => {
   const mobileBottomMenu = 
     user?.role === "admin"
       ? adminMobileMenu
+      : user?.role === "kepsek"
+        ? kepsekMobileMenu
       : user?.role === "guru"
         ? guruMobileMenu
         : siswaMobileMenu;
@@ -368,6 +405,8 @@ export const MainLayout = () => {
   const currentMenu =
     user?.role === "admin"
       ? adminMenu
+      : user?.role === "kepsek"
+        ? kepsekMenu
       : user?.role === "guru"
         ? guruMenu
         : siswaMenu;
@@ -391,6 +430,17 @@ export const MainLayout = () => {
           return <AdminRecycleBin />;
         case "pengaturan":
           return <AdminPengaturan />;
+        case "edit_profil":
+          return <UserEditProfil />;
+      }
+    } else if (user?.role === "kepsek") {
+      switch (activeMenu) {
+        case "dashboard":
+          return <AdminDashboard setActiveMenu={setActiveMenu} />;
+        case "pantau":
+          return <KepsekPantauPenguji />;
+        case "laporan":
+          return <Laporan />;
         case "edit_profil":
           return <UserEditProfil />;
       }

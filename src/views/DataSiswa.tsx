@@ -306,7 +306,7 @@ export const DataSiswa = () => {
               </label>
             </>
           )}
-          {(isAdmin || user?.role === 'guru') && (
+          {isAdmin && (
             <button className={`${isAdmin ? '' : 'col-span-2 md:col-span-1 '}flex items-center justify-center space-x-2 bg-[#d19e44] hover:bg-[#041e49] active:bg-[#041e49] text-white py-3 md:py-2 px-4 rounded-xl text-sm font-bold transition-all shadow-sm tap-bounce`} onClick={() => openFormModal()}>
               <Plus className="w-4 h-4" /> <span>Tambah Siswa</span>
             </button>
@@ -347,8 +347,12 @@ export const DataSiswa = () => {
                   <td className="px-4 py-3">
                     <div className="flex items-center justify-center space-x-2">
                       <button onClick={() => openStatistikModal(s)} className="p-1.5 text-[#d19e44] hover:bg-slate-50 dark:hover:bg-emerald-900/30 rounded-lg transition-colors" title="Statistik Hafalan"><BarChart2 className="w-4 h-4" /></button>
-                      <button onClick={() => openFormModal(s)} className="p-1.5 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded-lg transition-colors" title="Edit"><Edit2 className="w-4 h-4" /></button>
-                      <button onClick={() => handleDelete(s.id, s.nama)} className="p-1.5 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-lg transition-colors" title="Hapus"><Trash2 className="w-4 h-4" /></button>
+                      {isAdmin && (
+                        <>
+                          <button onClick={() => openFormModal(s)} className="p-1.5 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded-lg transition-colors" title="Edit"><Edit2 className="w-4 h-4" /></button>
+                          <button onClick={() => handleDelete(s.id, s.nama)} className="p-1.5 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-lg transition-colors" title="Hapus"><Trash2 className="w-4 h-4" /></button>
+                        </>
+                      )}
                     </div>
                   </td>
                 </tr>

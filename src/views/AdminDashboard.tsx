@@ -8,7 +8,7 @@ import { Chart as ChartJS, CategoryScale, LinearScale, BarElement, Title, Toolti
 ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend);
 
 export const AdminDashboard = ({ setActiveMenu }: { setActiveMenu?: (menu: string) => void }) => {
-  const { siswa, penguji, setoran, theme } = useAppContext();
+  const { user, siswa, penguji, setoran, theme } = useAppContext();
   
   const [siswaTuntas, setSiswaTuntas] = useState(0);
 
@@ -113,13 +113,16 @@ export const AdminDashboard = ({ setActiveMenu }: { setActiveMenu?: (menu: strin
 
       {setActiveMenu && (
         <div className="md:hidden mt-4">
-          <div className="grid grid-cols-4 gap-y-6 gap-x-2 px-1">
-            {[
+          <div className={`grid ${user?.role === 'kepsek' ? 'grid-cols-2 max-w-[200px] mx-auto' : 'grid-cols-4'} gap-y-6 gap-x-2 px-1`}>
+            {(user?.role === 'kepsek' ? [
+              { id: 'pantau', label: 'Pantau', icon: Users, color: 'text-purple-500', bg: 'bg-purple-100' },
+              { id: 'laporan', label: 'Laporan', icon: BarChart3, color: 'text-blue-500', bg: 'bg-blue-100' },
+            ] : [
               { id: 'siswa', label: 'Siswa', icon: Users, color: 'text-purple-500', bg: 'bg-purple-100' },
               { id: 'penguji', label: 'Penguji', icon: UserCheck, color: 'text-[#d19e44]', bg: 'bg-[#d19e44]/20' },
               { id: 'laporan', label: 'Laporan', icon: BarChart3, color: 'text-blue-500', bg: 'bg-blue-100' },
               { id: 'recycle', label: 'Sampah', icon: Trash2, color: 'text-red-500', bg: 'bg-red-100' },
-            ].map((menu) => {
+            ]).map((menu) => {
               const Icon = menu.icon;
               return (
                 <button
