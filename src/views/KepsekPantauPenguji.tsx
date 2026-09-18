@@ -7,9 +7,15 @@ export const KepsekPantauPenguji = () => {
   const { penguji, siswa, setoran } = useAppContext();
   const [selectedPengujiId, setSelectedPengujiId] = useState<string | null>(null);
   const [search, setSearch] = useState('');
+  const [filterJuz, setFilterJuz] = useState<number | 'Semua'>('Semua');
 
   const selectedPenguji = penguji.find(p => p.id === selectedPengujiId);
   const siswaBinaan = selectedPengujiId ? siswa.filter(s => s.penguji_id === selectedPengujiId) : [];
+  const allJuzTargets = Array.from(new Set(siswaBinaan.flatMap(s => s.target))).sort((a, b) => b - a);
+  
+  const displayedSiswa = filterJuz === 'Semua' 
+    ? siswaBinaan 
+    : siswaBinaan.filter(s => s.target.includes(filterJuz));
 
   const filteredPenguji = penguji.filter(p => p.nama.toLowerCase().includes(search.toLowerCase()));
 
@@ -74,7 +80,7 @@ export const KepsekPantauPenguji = () => {
           <div className="mb-4">
             <div className="flex items-center space-x-3 mb-2">
               <button 
-                onClick={() => setSelectedPengujiId(null)}
+                onClick={() => { setSelectedPengujiId(null); setFilterJuz('Semua'); }}
                 className="px-3 py-1.5 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-lg text-sm font-semibold transition-colors text-slate-700 dark:text-slate-300 flex items-center"
               >
                 <ChevronRight className="w-4 h-4 mr-1 rotate-180" /> Kembali
@@ -84,30 +90,51 @@ export const KepsekPantauPenguji = () => {
               </h2>
             </div>
             
-            <div className="flex gap-4 px-1 mt-3">
-              <div className="bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-100 dark:border-emerald-800 rounded-xl px-4 py-2">
-                <span className="text-xs font-bold text-emerald-600 dark:text-emerald-400 block mb-0.5">Sudah Tuntas</span>
-                <span className="text-lg font-black text-emerald-700 dark:text-emerald-300">
+            <div className="grid grid-cols-2 md:flex md:flex-row gap-2 md:gap-4 px-1 mt-4">
+              <div className="bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-100 dark:border-emerald-800 rounded-xl px-4 py-3 md:py-2 md:min-w-[140px]">
+                <span className="text-[11px] md:text-xs font-bold text-emerald-600 dark:text-emerald-400 block mb-0.5">Sudah Tuntas</span>
+                <span className="text-xl md:text-lg font-black text-emerald-700 dark:text-emerald-300">
                   {siswaBinaan.filter(s => {
                     const sSetoran = setoran.filter(set => set.siswa_id === s.id);
-                    return s.target.every(juz => getJuzProgress(juz, sSetoran.filter(st => st.juz === juz)).percentage === 100);
+                    return s.target.length > 0 && s.target.every(juz => getJuzProgress(juz, sSetoran.filter(st => st.juz === juz)).percentage === 100);
                   }).length} Siswa
                 </span>
               </div>
-              <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-100 dark:border-amber-800 rounded-xl px-4 py-2">
-                <span className="text-xs font-bold text-amber-600 dark:text-amber-400 block mb-0.5">Belum Tuntas</span>
-                <span className="text-lg font-black text-amber-700 dark:text-amber-300">
+              <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-100 dark:border-amber-800 rounded-xl px-4 py-3 md:py-2 md:min-w-[140px]">
+                <span className="text-[11px] md:text-xs font-bold text-amber-600 dark:text-amber-400 block mb-0.5">Belum Tuntas</span>
+                <span className="text-xl md:text-lg font-black text-amber-700 dark:text-amber-300">
                   {siswaBinaan.filter(s => {
                     const sSetoran = setoran.filter(set => set.siswa_id === s.id);
-                    return !s.target.every(juz => getJuzProgress(juz, sSetoran.filter(st => st.juz === juz)).percentage === 100);
+                    return s.target.length === 0 || !s.target.every(juz => getJuzProgress(juz, sSetoran.filter(st => st.juz === juz)).percentage === 100);
                   }).length} Siswa
                 </span>
               </div>
             </div>
+
+            {/* Filter Dropdown */}
+            {allJuzTargets.length > 0 && (
+              <div className="mt-4 px-1">
+                <div className="relative w-full md:w-64">
+                  <select
+                    value={filterJuz}
+                    onChange={(e) => setFilterJuz(e.target.value === 'Semua' ? 'Semua' : parseInt(e.target.value, 10))}
+                    className="w-full pl-4 pr-10 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-[#031433] text-slate-800 dark:text-white font-bold outline-none focus:border-[#d19e44] focus:ring-1 focus:ring-[#d19e44] appearance-none"
+                  >
+                    <option value="Semua">Semua Data</option>
+                    {allJuzTargets.map(juz => (
+                      <option key={juz} value={juz}>
+                        Juz {juz}
+                      </option>
+                    ))}
+                  </select>
+                  <ChevronRight className="w-4 h-4 text-slate-500 absolute right-4 top-1/2 -translate-y-1/2 rotate-90 pointer-events-none" />
+                </div>
+              </div>
+            )}
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-            {siswaBinaan.map(s => {
+            {displayedSiswa.map(s => {
               const siswaSetoran = setoran.filter(set => set.siswa_id === s.id);
               
               return (
@@ -129,7 +156,9 @@ export const KepsekPantauPenguji = () => {
                   </div>
                   
                   <div className="mt-4 space-y-3">
-                    {s.target.map(juz => {
+                    {s.target
+                      .filter(juz => filterJuz === 'Semua' || juz === filterJuz)
+                      .map(juz => {
                       const juzSetoran = siswaSetoran.filter(st => st.juz === juz);
                       const progress = getJuzProgress(juz, juzSetoran);
                       const isComplete = progress.percentage === 100;
@@ -154,7 +183,7 @@ export const KepsekPantauPenguji = () => {
                           </div>
                           <div className="flex justify-between items-center mt-2.5">
                             <span className="text-[10px] md:text-xs text-slate-500 dark:text-slate-400 font-medium">
-                              {progress.completedSurahs} / {progress.totalSurahs} Surat Tuntas
+                              {progress.text} Selesai
                             </span>
                             <div className="flex gap-2">
                               {countM > 0 && <span className="text-[10px] font-bold text-[#d19e44] bg-[#d19e44]/10 px-1.5 py-0.5 rounded">M: {countM}</span>}
@@ -169,9 +198,9 @@ export const KepsekPantauPenguji = () => {
                 </div>
               );
             })}
-            {siswaBinaan.length === 0 && (
+            {displayedSiswa.length === 0 && (
               <div className="col-span-full py-8 text-center text-slate-500 bg-white dark:bg-[#031433] rounded-2xl border border-slate-200 dark:border-slate-700">
-                Belum ada siswa binaan.
+                Data tidak ditemukan.
               </div>
             )}
           </div>
