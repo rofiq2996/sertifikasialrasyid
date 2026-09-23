@@ -1,13 +1,16 @@
 import React, { useState } from 'react';
 import { useAppContext } from '../lib/AppContext';
-import { UserCheck, Users, Search, ChevronRight, Award } from 'lucide-react';
+import { UserCheck, Users, Search, ChevronRight, Award, Eye, BookOpen, Layers } from 'lucide-react';
 import { getJuzProgress } from '../lib/constants';
+import { Siswa } from '../types';
+import { SiswaStatistikModal } from '../components/SiswaStatistikModal';
 
 export const KepsekPantauPenguji = () => {
   const { penguji, siswa, setoran } = useAppContext();
   const [selectedPengujiId, setSelectedPengujiId] = useState<string | null>(null);
   const [search, setSearch] = useState('');
   const [filterJuz, setFilterJuz] = useState<number | 'Semua'>('Semua');
+  const [selectedSiswaForStats, setSelectedSiswaForStats] = useState<Siswa | null>(null);
 
   const selectedPenguji = penguji.find(p => p.id === selectedPengujiId);
   const siswaBinaan = selectedPengujiId ? siswa.filter(s => s.penguji_id === selectedPengujiId) : [];
@@ -18,6 +21,10 @@ export const KepsekPantauPenguji = () => {
     : siswaBinaan.filter(s => s.target.includes(filterJuz));
 
   const filteredPenguji = penguji.filter(p => p.nama.toLowerCase().includes(search.toLowerCase()));
+
+  const getJuzCount = (juz: number) => {
+    return siswaBinaan.filter(s => s.target.includes(juz)).length;
+  };
 
   return (
     <div className="space-y-6 fade-in">
@@ -90,6 +97,7 @@ export const KepsekPantauPenguji = () => {
               </h2>
             </div>
             
+            {/* Kartu Status Tuntas / Belum Tuntas */}
             <div className="grid grid-cols-2 md:flex md:flex-row gap-2 md:gap-4 px-1 mt-4">
               <div className="bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-100 dark:border-emerald-800 rounded-xl px-4 py-3 md:py-2 md:min-w-[140px]">
                 <span className="text-[11px] md:text-xs font-bold text-emerald-600 dark:text-emerald-400 block mb-0.5">Sudah Tuntas</span>
@@ -111,24 +119,76 @@ export const KepsekPantauPenguji = () => {
               </div>
             </div>
 
+            {/* Penjelasan Jumlah Siswa per Juz */}
+            {allJuzTargets.length > 0 && (
+              <div className="mt-4 px-1 space-y-2">
+                <div className="flex items-center gap-1.5">
+                  <Layers className="w-4 h-4 text-[#d19e44]" />
+                  <span className="text-xs font-bold text-slate-700 dark:text-slate-300">
+                    Jumlah Siswa per Target Juz:
+                  </span>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  <button
+                    onClick={() => setFilterJuz('Semua')}
+                    className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all flex items-center gap-1.5 ${
+                      filterJuz === 'Semua'
+                        ? 'bg-[#041e49] text-white shadow-sm ring-2 ring-[#d19e44]'
+                        : 'bg-white dark:bg-[#031433] text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 hover:border-[#d19e44]/60'
+                    }`}
+                  >
+                    <span>Semua Target</span>
+                    <span className={`px-1.5 py-0.5 rounded-md text-[10px] font-black ${filterJuz === 'Semua' ? 'bg-white/20' : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300'}`}>
+                      {siswaBinaan.length}
+                    </span>
+                  </button>
+                  {allJuzTargets.map(juz => {
+                    const count = getJuzCount(juz);
+                    const isActive = filterJuz === juz;
+                    return (
+                      <button
+                        key={juz}
+                        onClick={() => setFilterJuz(juz)}
+                        className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all flex items-center gap-1.5 ${
+                          isActive
+                            ? 'bg-[#d19e44] text-white shadow-sm ring-2 ring-[#d19e44]/40 font-bold'
+                            : 'bg-white dark:bg-[#031433] text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 hover:border-[#d19e44]'
+                        }`}
+                      >
+                        <span>Juz {juz}:</span>
+                        <span className={`px-1.5 py-0.5 rounded-md text-[10px] font-black ${isActive ? 'bg-white/25 text-white' : 'bg-[#d19e44]/15 text-[#d19e44]'}`}>
+                          {count} Siswa
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
             {/* Filter Dropdown */}
             {allJuzTargets.length > 0 && (
-              <div className="mt-4 px-1">
-                <div className="relative w-full md:w-64">
+              <div className="mt-4 px-1 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                <div className="relative w-full sm:w-72">
                   <select
                     value={filterJuz}
                     onChange={(e) => setFilterJuz(e.target.value === 'Semua' ? 'Semua' : parseInt(e.target.value, 10))}
-                    className="w-full pl-4 pr-10 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-[#031433] text-slate-800 dark:text-white font-bold outline-none focus:border-[#d19e44] focus:ring-1 focus:ring-[#d19e44] appearance-none"
+                    className="w-full pl-3.5 pr-10 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-[#031433] text-slate-800 dark:text-white font-bold outline-none focus:border-[#d19e44] focus:ring-1 focus:ring-[#d19e44] appearance-none text-xs md:text-sm"
                   >
-                    <option value="Semua">Semua Data</option>
+                    <option value="Semua">Semua Target Juz ({siswaBinaan.length} Siswa)</option>
                     {allJuzTargets.map(juz => (
                       <option key={juz} value={juz}>
-                        Juz {juz}
+                        Juz {juz} ({getJuzCount(juz)} Siswa)
                       </option>
                     ))}
                   </select>
                   <ChevronRight className="w-4 h-4 text-slate-500 absolute right-4 top-1/2 -translate-y-1/2 rotate-90 pointer-events-none" />
                 </div>
+                {filterJuz !== 'Semua' && (
+                  <span className="text-xs text-slate-500 dark:text-slate-400 font-medium">
+                    Menampilkan {displayedSiswa.length} siswa dengan target Juz {filterJuz}
+                  </span>
+                )}
               </div>
             )}
           </div>
@@ -140,9 +200,34 @@ export const KepsekPantauPenguji = () => {
               return (
                 <div key={s.id} className="bg-white dark:bg-[#031433] p-5 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm flex flex-col justify-between">
                   <div>
-                    <div className="flex justify-between items-start mb-2">
-                      <h3 className="font-bold text-slate-800 dark:text-white text-base md:text-lg">{s.nama}</h3>
-                      <div className="text-right">
+                    <div className="flex justify-between items-start mb-2 gap-2">
+                      <div>
+                        <button
+                          type="button"
+                          onClick={() => setSelectedSiswaForStats(s)}
+                          className="text-left group flex items-center gap-1.5 focus:outline-none"
+                          title="Klik untuk melihat nilai per surat"
+                        >
+                          <h3 className="font-bold text-slate-800 dark:text-white text-base md:text-lg group-hover:text-[#d19e44] transition-colors underline-offset-4 group-hover:underline">
+                            {s.nama}
+                          </h3>
+                          <span className="inline-flex items-center justify-center p-1 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-400 group-hover:bg-[#d19e44] group-hover:text-white transition-all text-xs" title="Lihat Nilai per Surat">
+                            <Eye className="w-3.5 h-3.5" />
+                          </span>
+                        </button>
+                        <div className="flex items-center gap-2 mt-0.5">
+                          <span className="text-xs text-slate-500">{s.bin_binti} {s.nama_ayah}</span>
+                          <span className="text-slate-300 dark:text-slate-600">•</span>
+                          <button
+                            type="button"
+                            onClick={() => setSelectedSiswaForStats(s)}
+                            className="text-[11px] font-bold text-[#d19e44] hover:underline inline-flex items-center gap-1"
+                          >
+                            <BookOpen className="w-3 h-3" /> Nilai per Surat
+                          </button>
+                        </div>
+                      </div>
+                      <div className="text-right shrink-0">
                         <span className="text-[10px] text-slate-400 block font-bold uppercase tracking-wider mb-0.5">Target</span>
                         <div className="flex flex-wrap gap-1 justify-end">
                           {s.target.map(juz => (
@@ -185,10 +270,20 @@ export const KepsekPantauPenguji = () => {
                             <span className="text-[10px] md:text-xs text-slate-500 dark:text-slate-400 font-medium">
                               {progress.text} Selesai
                             </span>
-                            <div className="flex gap-2">
-                              {countM > 0 && <span className="text-[10px] font-bold text-[#d19e44] bg-[#d19e44]/10 px-1.5 py-0.5 rounded">M: {countM}</span>}
-                              {countJJ > 0 && <span className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 px-1.5 py-0.5 rounded">JJ: {countJJ}</span>}
-                              {countJ > 0 && <span className="text-[10px] font-bold text-blue-600 dark:text-blue-400 bg-blue-500/10 px-1.5 py-0.5 rounded">J: {countJ}</span>}
+                            <div className="flex items-center gap-2">
+                              <div className="flex gap-1.5">
+                                {countM > 0 && <span className="text-[10px] font-bold text-[#d19e44] bg-[#d19e44]/10 px-1.5 py-0.5 rounded">M: {countM}</span>}
+                                {countJJ > 0 && <span className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 px-1.5 py-0.5 rounded">JJ: {countJJ}</span>}
+                                {countJ > 0 && <span className="text-[10px] font-bold text-blue-600 dark:text-blue-400 bg-blue-500/10 px-1.5 py-0.5 rounded">J: {countJ}</span>}
+                              </div>
+                              <button
+                                type="button"
+                                onClick={() => setSelectedSiswaForStats(s)}
+                                className="p-1 rounded-md text-slate-400 hover:text-[#d19e44] hover:bg-slate-200/50 dark:hover:bg-slate-700/50 transition-colors"
+                                title="Lihat rincian nilai per surat"
+                              >
+                                <Eye className="w-3.5 h-3.5" />
+                              </button>
                             </div>
                           </div>
                         </div>
@@ -204,6 +299,13 @@ export const KepsekPantauPenguji = () => {
               </div>
             )}
           </div>
+
+          {/* Modal Rincian Nilai Per Surat Siswa */}
+          <SiswaStatistikModal 
+            isOpen={!!selectedSiswaForStats}
+            onClose={() => setSelectedSiswaForStats(null)}
+            siswa={selectedSiswaForStats}
+          />
         </>
       )}
     </div>
