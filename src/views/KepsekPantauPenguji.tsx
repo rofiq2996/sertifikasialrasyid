@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useAppContext } from '../lib/AppContext';
-import { UserCheck, Users, Search, ChevronRight, Award, Eye, BookOpen, Layers } from 'lucide-react';
-import { getJuzProgress } from '../lib/constants';
+import { UserCheck, Users, Search, ChevronRight, Award, Eye, Layers } from 'lucide-react';
+import { getJuzProgress, calculatePredikatAkhir, formatPredikatCert } from '../lib/constants';
 import { Siswa } from '../types';
 import { SiswaStatistikModal } from '../components/SiswaStatistikModal';
 
@@ -14,7 +14,7 @@ export const KepsekPantauPenguji = () => {
 
   const selectedPenguji = penguji.find(p => p.id === selectedPengujiId);
   const siswaBinaan = selectedPengujiId ? siswa.filter(s => s.penguji_id === selectedPengujiId) : [];
-  const allJuzTargets = Array.from(new Set(siswaBinaan.flatMap(s => s.target))).sort((a, b) => b - a);
+  const allJuzTargets: number[] = Array.from(new Set<number>(siswaBinaan.flatMap(s => s.target || []))).sort((a, b) => b - a);
   
   const displayedSiswa = filterJuz === 'Semua' 
     ? siswaBinaan 
@@ -217,14 +217,6 @@ export const KepsekPantauPenguji = () => {
                         </button>
                         <div className="flex items-center gap-2 mt-0.5">
                           <span className="text-xs text-slate-500">{s.bin_binti} {s.nama_ayah}</span>
-                          <span className="text-slate-300 dark:text-slate-600">•</span>
-                          <button
-                            type="button"
-                            onClick={() => setSelectedSiswaForStats(s)}
-                            className="text-[11px] font-bold text-[#d19e44] hover:underline inline-flex items-center gap-1"
-                          >
-                            <BookOpen className="w-3 h-3" /> Nilai per Surat
-                          </button>
                         </div>
                       </div>
                       <div className="text-right shrink-0">
@@ -267,23 +259,20 @@ export const KepsekPantauPenguji = () => {
                             ></div>
                           </div>
                           <div className="flex justify-between items-center mt-2.5">
-                            <span className="text-[10px] md:text-xs text-slate-500 dark:text-slate-400 font-medium">
-                              {progress.text} Selesai
-                            </span>
-                            <div className="flex items-center gap-2">
-                              <div className="flex gap-1.5">
-                                {countM > 0 && <span className="text-[10px] font-bold text-[#d19e44] bg-[#d19e44]/10 px-1.5 py-0.5 rounded">M: {countM}</span>}
-                                {countJJ > 0 && <span className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 px-1.5 py-0.5 rounded">JJ: {countJJ}</span>}
-                                {countJ > 0 && <span className="text-[10px] font-bold text-blue-600 dark:text-blue-400 bg-blue-500/10 px-1.5 py-0.5 rounded">J: {countJ}</span>}
-                              </div>
-                              <button
-                                type="button"
-                                onClick={() => setSelectedSiswaForStats(s)}
-                                className="p-1 rounded-md text-slate-400 hover:text-[#d19e44] hover:bg-slate-200/50 dark:hover:bg-slate-700/50 transition-colors"
-                                title="Lihat rincian nilai per surat"
-                              >
-                                <Eye className="w-3.5 h-3.5" />
-                              </button>
+                            <div className="flex items-center gap-1.5 flex-wrap">
+                              <span className="text-[10px] md:text-xs text-slate-500 dark:text-slate-400 font-medium">
+                                {progress.text} Selesai
+                              </span>
+                              {isComplete && (
+                                <span className="text-[10px] font-black text-[#d19e44] bg-[#d19e44]/15 border border-[#d19e44]/30 px-1.5 py-0.5 rounded tracking-wide">
+                                  Predikat: {formatPredikatCert(calculatePredikatAkhir(juz, juzSetoran))}
+                                </span>
+                              )}
+                            </div>
+                            <div className="flex gap-1.5">
+                              {countM > 0 && <span className="text-[10px] font-bold text-[#d19e44] bg-[#d19e44]/10 px-1.5 py-0.5 rounded">M: {countM}</span>}
+                              {countJJ > 0 && <span className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 px-1.5 py-0.5 rounded">JJ: {countJJ}</span>}
+                              {countJ > 0 && <span className="text-[10px] font-bold text-blue-600 dark:text-blue-400 bg-blue-500/10 px-1.5 py-0.5 rounded">J: {countJ}</span>}
                             </div>
                           </div>
                         </div>

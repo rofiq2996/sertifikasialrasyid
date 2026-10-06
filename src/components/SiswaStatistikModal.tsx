@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { X, CheckCircle } from 'lucide-react';
+import { X, CheckCircle, Award } from 'lucide-react';
 import { useAppContext } from '../lib/AppContext';
-import { JUZ_SURAH_MAP, STATUS_OPTIONS, formatNilai, getNilaiBgColor, getJuzProgress, JUZ_SURAH_AYAT_RANGE } from '../lib/constants';
+import { JUZ_SURAH_MAP, STATUS_OPTIONS, formatNilai, getNilaiBgColor, getJuzProgress, JUZ_SURAH_AYAT_RANGE, calculatePredikatAkhir, formatPredikatCert } from '../lib/constants';
 import { Siswa } from '../types';
 import { CustomSelect } from './CustomSelect';
 
@@ -125,6 +125,17 @@ export const SiswaStatistikModal: React.FC<SiswaStatistikModalProps> = ({ isOpen
                       <div className="absolute inset-0 bg-white/20 animate-pulse"></div>
                     </div>
                   </div>
+                  {progressInfo.percentage === 100 && (
+                    <div className="mt-3 p-3 bg-amber-500/10 border border-[#d19e44]/30 rounded-xl flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <Award className="w-4 h-4 text-[#d19e44]" />
+                        <span className="text-xs font-bold text-slate-700 dark:text-slate-300">Predikat Kelulusan:</span>
+                      </div>
+                      <span className="text-xs font-black px-2.5 py-0.5 rounded-full bg-[#d19e44]/20 text-[#d19e44] uppercase tracking-wider">
+                        {formatPredikatCert(calculatePredikatAkhir(selectedJuz, mySetoran))}
+                      </span>
+                    </div>
+                  )}
                 </div>
 
                 <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">

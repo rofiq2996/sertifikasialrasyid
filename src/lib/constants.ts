@@ -125,98 +125,113 @@ export function getKriteriaNilai(juz: number, surahName?: string) {
   return { m, jj, j };
 }
 
+export function normalizeNilai(val: string): 'M' | 'JJ' | 'J' | null {
+  if (!val) return null;
+  const v = val.trim();
+  if (v === 'Mumtaz (M)' || v === 'M' || v.toUpperCase() === 'MUMTAZ') return 'M';
+  if (v === 'Jayyid Jiddan (JJ)' || v === 'JJ' || v.toUpperCase() === 'JAYYID JIDDAN') return 'JJ';
+  if (v === 'Jayyid (J)' || v === 'J' || v.toUpperCase() === 'JAYYID') return 'J';
+  if (v.includes('JJ') || v.toLowerCase().includes('jiddan')) return 'JJ';
+  if (v.includes('Jayyid') || v.toLowerCase().includes('jayyid')) return 'J';
+  if (v.includes('Mumtaz') || v.toLowerCase().includes('mumtaz')) return 'M';
+  return null;
+}
+
 export function calculatePredikatAkhir(juz: number, setoranList: any[]) {
   if (!setoranList || setoranList.length === 0) return '-';
 
-  const progress = getJuzProgress(juz, setoranList);
-  if (progress.covered < progress.total) return '-';
+  // Jika input berupa daftar record setoran lengkap, pastikan target juz sudah tuntas
+  if (typeof setoranList[0] === 'object' && setoranList[0] !== null) {
+    const progress = getJuzProgress(juz, setoranList);
+    if (progress.covered < progress.total) return '-';
+  }
 
-  const getSalah = (list: any[]) => {
-    let salahCount = 0;
-    for (const s of list) {
-      if (!s.nilai) continue;
-      if (s.nilai.includes('JJ')) {
-        salahCount += 1;
-      } else if (s.nilai === 'Jayyid (J)' || s.nilai === 'J') {
-        salahCount += 2; // Jayyid is considered a major mistake (2 minor mistakes)
+  // Dapatkan daftar nilai terkini (untuk pengulangan/remedial diambil nilai setoran terbaru)
+  let listToEvaluate: any[] = [];
+  if (typeof setoranList[0] === 'string') {
+    listToEvaluate = setoranList;
+  } else if (juz >= 29) {
+    const latestMap = new Map<string, any>();
+    const sorted = [...setoranList].sort((a, b) => {
+      const timeA = a?.tgl ? new Date(a.tgl).getTime() : 0;
+      const timeB = b?.tgl ? new Date(b.tgl).getTime() : 0;
+      return timeA - timeB;
+    });
+    for (const s of sorted) {
+      if (s && s.surah) {
+        latestMap.set(s.surah, s);
       }
     }
-    return salahCount;
-  };
-
-  if (typeof setoranList[0] === 'string') {
-    let salah = 0;
-    for (const n of setoranList) {
-      if (n.includes('JJ')) salah += 1;
-      else if (n === 'Jayyid (J)' || n === 'J') salah += 2;
+    listToEvaluate = Array.from(latestMap.values());
+  } else {
+    // Juz 1 s.d. 28
+    const latestMap = new Map<string, any>();
+    const sorted = [...setoranList].sort((a, b) => {
+      const timeA = a?.tgl ? new Date(a.tgl).getTime() : 0;
+      const timeB = b?.tgl ? new Date(b.tgl).getTime() : 0;
+      return timeA - timeB;
+    });
+    for (const s of sorted) {
+      if (s) {
+        const key = `${s.surah || ''}_${s.ayat || ''}`;
+        latestMap.set(key, s);
+      }
     }
-
-    if (juz === 30) {
-      if (salah <= 5) return 'Mumtaz (M)';
-      if (salah <= 9) return 'Jayyid Jiddan (JJ)';
-      if (salah <= 13) return 'Jayyid (J)';
-      return '-';
-    } else if (juz === 29) {
-      if (salah <= 3) return 'Mumtaz (M)';
-      if (salah <= 5) return 'Jayyid Jiddan (JJ)';
-      if (salah <= 6) return 'Jayyid (J)';
-      return '-';
-    } else {
-      if (salah <= 3) return 'Mumtaz (M)';
-      if (salah <= 4) return 'Jayyid Jiddan (JJ)';
-      if (salah <= 5) return 'Jayyid (J)';
-      return '-';
-    }
+    listToEvaluate = Array.from(latestMap.values());
   }
 
-  const latestSetoranMap = new Map<string, any>();
-  const sortedSetoran = [...setoranList].sort((a, b) => new Date(a.tgl).getTime() - new Date(b.tgl).getTime());
-  for (const s of sortedSetoran) {
-    latestSetoranMap.set(s.surah, s);
+  if (listToEvaluate.length === 0 && setoranList.length > 0) {
+    listToEvaluate = setoranList;
   }
-  const latestSetorans = Array.from(latestSetoranMap.values());
+
+  let countM = 0;
+  let countJJ = 0;
+  let countJ = 0;
+
+  for (const item of listToEvaluate) {
+    const val = typeof item === 'string' ? item : (item?.nilai || '');
+    const norm = normalizeNilai(val);
+    if (norm === 'M') countM++;
+    else if (norm === 'JJ') countJJ++;
+    else if (norm === 'J') countJ++;
+  }
+
+  if (countM === 0 && countJJ === 0 && countJ === 0) return '-';
 
   if (juz === 30) {
-    const part1 = latestSetorans.filter(s => {
-      const num = getSurahNumber(s.surah);
-      return num >= 93 && num <= 114;
-    });
-    const part2 = latestSetorans.filter(s => {
-      const num = getSurahNumber(s.surah);
-      return num >= 78 && num <= 92;
-    });
-
-    const salah1 = getSalah(part1);
-    const salah2 = getSalah(part2);
-
-    let grade1 = 0; 
-    if (salah1 <= 2) grade1 = 3;
-    else if (salah1 <= 4) grade1 = 2;
-    else if (salah1 <= 6) grade1 = 1;
-
-    let grade2 = 0;
-    if (salah2 <= 3) grade2 = 3;
-    else if (salah2 <= 5) grade2 = 2;
-    else if (salah2 <= 7) grade2 = 1;
-
-    const finalGrade = Math.min(grade1, grade2);
-    if (finalGrade === 3) return 'Mumtaz (M)';
-    if (finalGrade === 2) return 'Jayyid Jiddan (JJ)';
-    if (finalGrade === 1) return 'Jayyid (J)';
-    return '-';
-
+    // 1. Jika memiliki nilai jayyid jiddan maksimal 4 lalu tidak ada nilai jayyid dan sisanya adalah nilai mumtaz maka predikat akhirnya adalah MUMTAZ
+    if (countJJ <= 4 && countJ === 0) {
+      return 'Mumtaz (M)';
+    }
+    // 2. Jika terdapat nilai jayyid jiddan maksimal 7 dan nilai jayyid maksimal 2 lalu sisanya nilai mumtaz maka predikat akhirnya adalah JAYYID JIDDAN
+    if (countJJ <= 7 && countJ <= 2) {
+      return 'Jayyid Jiddan (JJ)';
+    }
+    // 3. Jika memiliki nilai jayyid minimal 5 saja (atau selebihnya) maka nilai akhir atau predikatnya adalah JAYYID
+    return 'Jayyid (J)';
   } else if (juz === 29) {
-    const salah = getSalah(latestSetorans);
-    if (salah <= 3) return 'Mumtaz (M)';
-    if (salah <= 5) return 'Jayyid Jiddan (JJ)';
-    if (salah <= 6) return 'Jayyid (J)';
-    return '-';
+    // 1. Jika memiliki nilai jayyid jiddan maksimal 3 lalu tidak ada nilai jayyid dan sisanya adalah nilai mumtaz maka predikat akhirnya adalah MUMTAZ
+    if (countJJ <= 3 && countJ === 0) {
+      return 'Mumtaz (M)';
+    }
+    // 2. Jika terdapat nilai jayyid jiddan maksimal 4 dan nilai jayyid maksimal 2 lalu sisanya nilai mumtaz maka predikat akhirnya adalah JAYYID JIDDAN
+    if (countJJ <= 4 && countJ <= 2) {
+      return 'Jayyid Jiddan (JJ)';
+    }
+    // 3. Jika memiliki nilai jayyid minimal 3 saja maka nilai akhir atau predikatnya adalah JAYYID
+    return 'Jayyid (J)';
   } else {
-    const salah = getSalah(latestSetorans);
-    if (salah <= 3) return 'Mumtaz (M)';
-    if (salah <= 4) return 'Jayyid Jiddan (JJ)';
-    if (salah <= 5) return 'Jayyid (J)';
-    return '-';
+    // Juz 1 s.d. 28:
+    // 1. Jika memiliki nilai jayyid jiddan maksimal 3 lalu tidak ada nilai jayyid dan sisanya mumtaz maka predikat akhirnya adalah MUMTAZ
+    if (countJJ <= 3 && countJ === 0) {
+      return 'Mumtaz (M)';
+    }
+    // 2. Jika terdapat nilai jayyid jiddan maksimal 5 dan nilai jayyid maksimal 3 lalu sisanya mumtaz maka predikat akhirnya adalah JAYYID JIDDAN
+    if (countJJ <= 5 && countJ <= 3) {
+      return 'Jayyid Jiddan (JJ)';
+    }
+    // 3. Jika memiliki nilai jayyid minimal 4 saja maka nilai akhir atau predikatnya adalah JAYYID
+    return 'Jayyid (J)';
   }
 }
 
